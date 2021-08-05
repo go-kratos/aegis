@@ -1,14 +1,3 @@
-//Migrate and refactor the bbr limiter algorithm from kratos v1.0
-//
-//Done:
-//* remove `allowOptions` in `Limiter` interface for better decoupling
-//* remove `doneInfo` for none use
-//* remove limiter group because it may be replaced by selector
-//* refactor `bbr` config to functional options
-//* rename some variable to improved code readability, like `windowSize`, `bucketNum`, etc.
-//* refactor some function, like `apply` in policy.go (original function name is `add`)
-//* add and refactor some unit test cases
-
 package bbr
 
 import (
