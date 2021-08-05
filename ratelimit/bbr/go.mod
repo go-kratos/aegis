@@ -1,4 +1,4 @@
-module bbr
+module github.com/go-kratos/sra/ratelimit/bbr
 
 go 1.16
 
