@@ -3,5 +3,5 @@ Service Reliability Algorithm
 
 ## List
 
-- [./breaker](breaker)
-- [./ratelimit](ratelimit)
+- [breaker](./breaker)
+- [ratelimit](./ratelimit)
