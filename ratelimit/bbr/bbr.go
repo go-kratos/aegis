@@ -2,13 +2,12 @@ package bbr
 
 import (
 	"context"
+	"errors"
 	"math"
 	"sync/atomic"
 	"time"
 
-	"bbr/cpu"
-
-	"github.com/go-kratos/kratos/v2/middleware/ratelimit"
+	"github.com/go-kratos/sra/ratelimit/bbr/cpu"
 )
 
 var (
@@ -20,6 +19,10 @@ var (
 		BucketNum:    100,
 		CPUThreshold: 800,
 	}
+
+	// ErrLimitExceed is returned when the rate limiter is
+	// triggered and the request is rejected due to limit exceeded.
+	ErrLimitExceed = errors.New("rate limit exceeded")
 )
 
 type (
@@ -115,7 +118,7 @@ type BBR struct {
 	opts *options
 }
 
-func NewLimiter(opts ...Option) ratelimit.Limiter {
+func NewLimiter(opts ...Option) *BBR {
 	options := defaultOpts
 	for _, o := range opts {
 		o(options)
@@ -267,7 +270,7 @@ func (l *BBR) Stat() Stat {
 // Once overload is detected, it raises limit.ErrLimitExceed error.
 func (l *BBR) Allow(ctx context.Context) (func(), error) {
 	if l.shouldDrop() {
-		return nil, ratelimit.ErrLimitExceed
+		return nil, ErrLimitExceed
 	}
 	atomic.AddInt64(&l.inFlight, 1)
 	stime := time.Since(initTime)
