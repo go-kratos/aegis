@@ -1,4 +1,4 @@
-package bbr
+package window
 
 // Sum the values within the window.
 func Sum(iterator Iterator) float64 {

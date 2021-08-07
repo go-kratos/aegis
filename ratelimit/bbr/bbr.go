@@ -7,7 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-kratos/sra/ratelimit/bbr/cpu"
+	"github.com/go-kratos/sra/pkg/cpu"
+	"github.com/go-kratos/sra/pkg/window"
 )
 
 var (
@@ -104,8 +105,8 @@ func WithCPUThreshold(threshold int64) Option {
 // https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
 type BBR struct {
 	cpu             cpuGetter
-	passStat        RollingCounter
-	rtStat          RollingCounter
+	passStat        window.RollingCounter
+	rtStat          window.RollingCounter
 	inFlight        int64
 	bucketPerSecond int64
 	bucketSize      time.Duration
@@ -126,8 +127,8 @@ func NewLimiter(opts ...Option) *BBR {
 
 	size := options.BucketNum
 	bucketSize := options.WindowSize / time.Duration(options.BucketNum)
-	passStat := NewRollingCounter(RollingCounterOpts{Size: size, BucketDuration: bucketSize})
-	rtStat := NewRollingCounter(RollingCounterOpts{Size: size, BucketDuration: bucketSize})
+	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: size, BucketDuration: bucketSize})
+	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: size, BucketDuration: bucketSize})
 
 	limiter := &BBR{
 		cpu:             func() int64 { return atomic.LoadInt64(&gCPU) },
@@ -148,7 +149,7 @@ func (l *BBR) maxPASS() int64 {
 			return ps.val
 		}
 	}
-	rawMaxPass := int64(l.passStat.Reduce(func(iterator Iterator) float64 {
+	rawMaxPass := int64(l.passStat.Reduce(func(iterator window.Iterator) float64 {
 		var result = 1.0
 		for i := 1; iterator.Next() && i < l.opts.BucketNum; i++ {
 			bucket := iterator.Bucket()
@@ -189,7 +190,7 @@ func (l *BBR) minRT() int64 {
 			return rc.val
 		}
 	}
-	rawMinRT := int64(math.Ceil(l.rtStat.Reduce(func(iterator Iterator) float64 {
+	rawMinRT := int64(math.Ceil(l.rtStat.Reduce(func(iterator window.Iterator) float64 {
 		var result = math.MaxFloat64
 		for i := 1; iterator.Next() && i < l.opts.BucketNum; i++ {
 			bucket := iterator.Bucket()

@@ -1,4 +1,4 @@
-package bbr
+package window
 
 // Bucket contains multiple float64 points.
 type Bucket struct {

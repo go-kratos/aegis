@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kratos/sra/pkg/window"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -117,7 +118,7 @@ func TestBBRMinRt(t *testing.T) {
 
 	// default max min rt is equal to maxFloat64.
 	bbr = NewLimiter(optsForTest...)
-	bbr.rtStat = NewRollingCounter(RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
+	bbr.rtStat = window.NewRollingCounter(window.RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
 	assert.Equal(t, int64(1), bbr.minRT())
 }
 
@@ -145,8 +146,8 @@ func TestBBRMinRtWithCache(t *testing.T) {
 func TestBBRMaxQps(t *testing.T) {
 	bbr := NewLimiter(optsForTest...)
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
-	passStat := NewRollingCounter(RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
-	rtStat := NewRollingCounter(RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
+	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
+	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
 	for i := 0; i < 10; i++ {
 		passStat.Add(int64((i + 2) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {
@@ -168,8 +169,8 @@ func TestBBRShouldDrop(t *testing.T) {
 		return cpu
 	}
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
-	passStat := NewRollingCounter(RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
-	rtStat := NewRollingCounter(RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
+	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
+	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: 10, BucketDuration: bucketDuration})
 	for i := 0; i < 10; i++ {
 		passStat.Add(int64((i + 1) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {
