@@ -2,6 +2,10 @@ github.com/StackExchange/wmi v1.2.1 h1:VIkavFPXSjcnS+O8yTq7NI32k0R5Aj+v39y29VYDO
 github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9SBzvHz7e8=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/go-kratos/sra/pkg/cpu v0.0.0-20210809055913-feb6d74203a8 h1:hTjcJsmXxuoq5R9Iq6+URD+27FmUFkyc8mJApcvRNWU=
+github.com/go-kratos/sra/pkg/cpu v0.0.0-20210809055913-feb6d74203a8/go.mod h1:g0rReMGmov+1+NP2lr9X5YZ8VPRE/CisT3FFh8GDi2w=
+github.com/go-kratos/sra/pkg/window v0.0.0-20210809055913-feb6d74203a8 h1:tXHyn3vcU5Hg7v0o4xqjgWuu+PKFUc7olEgzvTdEGeo=
+github.com/go-kratos/sra/pkg/window v0.0.0-20210809055913-feb6d74203a8/go.mod h1:++OBptWdPdqXHL41+dbCxesyiotc97n1FEzXc7Gt7OQ=
 github.com/go-ole/go-ole v1.2.5 h1:t4MGB5xEDZvXI+0rMjjsfBsD7yAgp/s9ZDkL1JndXwY=
 github.com/go-ole/go-ole v1.2.5/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
