@@ -1,6 +1,7 @@
 package sre
 
 import (
+	"context"
 	"errors"
 	"math"
 	"math/rand"
@@ -107,7 +108,7 @@ func (b *sreBreaker) summary() (success int64, total int64) {
 	return
 }
 
-func (b *sreBreaker) Allow() error {
+func (b *sreBreaker) Allow(_ context.Context) error {
 	success, total := b.summary()
 	k := b.k * float64(success)
 
@@ -145,4 +146,16 @@ func (b *sreBreaker) trueOnProba(proba float64) (truth bool) {
 	truth = b.r.Float64() < proba
 	b.randLock.Unlock()
 	return
+}
+
+func (b *sreBreaker) Check(err error) bool {
+	return err == nil
+}
+
+func (b *sreBreaker) Mark(isSuccess bool) {
+	if isSuccess {
+		b.stat.Add(1)
+	} else {
+		b.stat.Add(0)
+	}
 }
