@@ -12,6 +12,8 @@ import (
 	"github.com/go-kratos/sra/pkg/window"
 )
 
+type Option func(*config)
+
 const (
 	// StateOpen when circuit breaker open, request not allowed, after sleep
 	// some duration, allow one single request for testing the health, if ok
@@ -24,44 +26,45 @@ const (
 )
 
 var (
-	_mu   sync.RWMutex
-	_conf = &Config{
-		Window:  time.Duration(3 * time.Second),
-		Bucket:  10,
-		Request: 100,
-
-		// Percentage of failures must be lower than 33.33%
-		K: 1.5,
-
-		// Pattern: "",
-	}
 	ErrBreakerTriggered = errors.New("circuit breaker triggered")
 )
 
 // Config broker config.
-type Config struct {
-	SwitchOff bool // breaker switch,default off.
+type config struct {
+	k float64
 
-	// Google
-	K float64
-
-	Window  time.Duration
-	Bucket  int
-	Request int64
+	window  time.Duration
+	bucket  int
+	request int64
 }
 
-func (conf *Config) fix() {
-	if conf.K == 0 {
-		conf.K = 1.5
+// WithKValue set the K value of sre breaker, default K is 1.5
+// Reducing the K will make adaptive throttling behave more aggressively,
+// Increasing the K will make adaptive throttling behave less aggressively.
+func WithKValue(K float64) Option {
+	return func(c *config) {
+		c.k = K
 	}
-	if conf.Request == 0 {
-		conf.Request = 100
+}
+
+// WithMinimumRequest set the minimum number of requests allowed
+func WithMinimumRequest(request int64) Option {
+	return func(c *config) {
+		c.request = request
 	}
-	if conf.Bucket == 0 {
-		conf.Bucket = 10
+}
+
+// WithWindowSize set the duration size of the statistical window
+func WithWindowSize(size time.Duration) Option {
+	return func(c *config) {
+		c.window = size
 	}
-	if conf.Window == 0 {
-		conf.Window = time.Duration(3 * time.Second)
+}
+
+// WithBuckerNumber set the bucket number in a window duration
+func WithBucketNumber(num int) Option {
+	return func(c *config) {
+		c.bucket = num
 	}
 }
 
@@ -72,24 +75,37 @@ type sreBreaker struct {
 	// rand.New(...) returns a non thread safe object
 	randLock sync.Mutex
 
+	// Reducing the k will make adaptive throttling behave more aggressively,
+	// Increasing the k will make adaptive throttling behave less aggressively.
 	k       float64
 	request int64
 
 	state int32
 }
 
-func NewBreaker(c *Config) *sreBreaker {
+func NewBreaker(opts ...Option) *sreBreaker {
+	c := &config{
+		k:       1.5,
+		request: 100,
+		bucket:  10,
+		window:  3 * time.Second,
+	}
+
+	for _, o := range opts {
+		o(c)
+	}
+
 	counterOpts := window.RollingCounterOpts{
-		Size:           c.Bucket,
-		BucketDuration: time.Duration(int64(c.Window) / int64(c.Bucket)),
+		Size:           c.bucket,
+		BucketDuration: time.Duration(int64(c.window) / int64(c.bucket)),
 	}
 	stat := window.NewRollingCounter(counterOpts)
 	return &sreBreaker{
 		stat: stat,
 		r:    rand.New(rand.NewSource(time.Now().UnixNano())),
 
-		request: c.Request,
-		k:       c.K,
+		request: c.request,
+		k:       c.k,
 		state:   StateClosed,
 	}
 }

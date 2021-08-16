@@ -11,15 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getSRE() *sreBreaker {
-	return NewBreaker(&Config{
-		Window:  time.Duration(1 * time.Second),
-		Bucket:  10,
-		Request: 100,
-		K:       2,
-	})
-}
-
 func getSREBreaker() *sreBreaker {
 	counterOpts := window.RollingCounterOpts{
 		Size:           10,
@@ -92,24 +83,24 @@ func testSREHalfOpen(t *testing.T, b *sreBreaker) {
 }
 
 func TestSRE(t *testing.T) {
-	b := getSRE()
+	b := getSREBreaker()
 	testSREClose(t, b)
 
-	b = getSRE()
+	b = getSREBreaker()
 	testSREOpen(t, b)
 
-	b = getSRE()
+	b = getSREBreaker()
 	testSREHalfOpen(t, b)
 }
 
 func TestSRESelfProtection(t *testing.T) {
 	t.Run("total request < 100", func(t *testing.T) {
-		b := getSRE()
+		b := getSREBreaker()
 		markFailed(b, 99)
 		assert.Equal(t, b.Allow(context.Background()), nil)
 	})
 	t.Run("total request > 100, total < 2 * success", func(t *testing.T) {
-		b := getSRE()
+		b := getSREBreaker()
 		size := rand.Intn(10000000)
 		succ := int(math.Ceil(float64(size))) + 1
 		markSuccess(b, succ)
@@ -175,7 +166,7 @@ func TestTrueOnProba(t *testing.T) {
 }
 
 func BenchmarkSreBreakerAllow(b *testing.B) {
-	breaker := getSRE()
+	breaker := getSREBreaker()
 	b.ResetTimer()
 	for i := 0; i <= b.N; i++ {
 		breaker.Allow(context.Background())
