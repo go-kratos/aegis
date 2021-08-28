@@ -28,6 +28,12 @@ function lint() {
 	eval '${LINTER} run --timeout=5m --config=${LINTER_CONF} --exclude-use-default=false'
 }
 
+function build() {
+	cd "$1"
+	echo "build $(sed -n 1p go.mod | cut -d ' ' -f2)"
+	go build -v ./...
+}
+
 case $1 in
 deps)
 	shift
@@ -40,5 +46,9 @@ test)
 lint)
 	shift
 	lint "$@"
+	;;
+build)
+	shift
+	build "$@"
 	;;
 esac

@@ -35,3 +35,6 @@ jobs:
 
       - name: Go Test
         run: make test PKG_DIR=${{ matrix.case.dir }}
+
+      - name: Go Build
+        run: make build PKG_DIR=${{ matrix.case.dir }}

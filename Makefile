@@ -15,3 +15,7 @@ deps:
 lint:
 	curl -L https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.42.0
 	${TOOLS_SH} lint ${PKG_DIR}
+
+.PHONY: build
+build:
+	${TOOLS_SH} build ${PKG_DIR}	
