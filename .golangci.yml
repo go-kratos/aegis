@@ -3,13 +3,13 @@ run:
   modules-download-mode: readonly
 
 linters:
+  disable-all: true
   enable:
     - deadcode
     - govet
     - gosimple
     - gofmt
     - goconst
-    - golint
     - goimports
     - ineffassign
     - prealloc

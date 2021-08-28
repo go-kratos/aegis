@@ -30,7 +30,7 @@ jobs:
       - name: Get Dependencies
         run: make deps PKG_DIR=${{ matrix.case.dir }}
 
-      - name: Golangci Lint
+      - name: GolangCI Lint
         run: make lint PKG_DIR=${{ matrix.case.dir }}
 
       - name: Go Test

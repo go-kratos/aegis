@@ -9,7 +9,7 @@ import (
 )
 
 func GetRollingPolicy() *RollingPolicy {
-	w := NewWindow(WindowOpts{Size: 3})
+	w := NewWindow(Options{Size: 3})
 	return NewRollingPolicy(w, RollingPolicyOpts{BucketDuration: 100 * time.Millisecond})
 }
 

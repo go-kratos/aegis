@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getSREBreaker() *sreBreaker {
+func getSREBreaker() *Breaker {
 	counterOpts := window.RollingCounterOpts{
 		Size:           10,
 		BucketDuration: time.Millisecond * 100,
 	}
 	stat := window.NewRollingCounter(counterOpts)
-	return &sreBreaker{
+	return &Breaker{
 		stat: stat,
 		r:    rand.New(rand.NewSource(time.Now().UnixNano())),
 
@@ -27,47 +27,47 @@ func getSREBreaker() *sreBreaker {
 	}
 }
 
-func markSuccessWithDuration(b *sreBreaker, count int, sleep time.Duration) {
+func markSuccessWithDuration(b *Breaker, count int, sleep time.Duration) {
 	for i := 0; i < count; i++ {
 		b.MarkSuccess()
 		time.Sleep(sleep)
 	}
 }
 
-func markFailedWithDuration(b *sreBreaker, count int, sleep time.Duration) {
+func markFailedWithDuration(b *Breaker, count int, sleep time.Duration) {
 	for i := 0; i < count; i++ {
 		b.MarkFailed()
 		time.Sleep(sleep)
 	}
 }
 
-func markSuccess(b *sreBreaker, count int) {
+func markSuccess(b *Breaker, count int) {
 	for i := 0; i < count; i++ {
 		b.MarkSuccess()
 	}
 }
 
-func markFailed(b *sreBreaker, count int) {
+func markFailed(b *Breaker, count int) {
 	for i := 0; i < count; i++ {
 		b.MarkFailed()
 	}
 }
 
-func testSREClose(t *testing.T, b *sreBreaker) {
+func testSREClose(t *testing.T, b *Breaker) {
 	markSuccess(b, 80)
 	assert.Equal(t, b.Allow(context.Background()), nil)
 	markSuccess(b, 120)
 	assert.Equal(t, b.Allow(context.Background()), nil)
 }
 
-func testSREOpen(t *testing.T, b *sreBreaker) {
+func testSREOpen(t *testing.T, b *Breaker) {
 	markSuccess(b, 100)
 	assert.Equal(t, b.Allow(context.Background()), nil)
 	markFailed(b, 10000000)
 	assert.NotEqual(t, b.Allow(context.Background()), nil)
 }
 
-func testSREHalfOpen(t *testing.T, b *sreBreaker) {
+func testSREHalfOpen(t *testing.T, b *Breaker) {
 	// failback
 	assert.Equal(t, b.Allow(context.Background()), nil)
 	t.Run("allow single failed", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestSRESelfProtection(t *testing.T) {
 	t.Run("total request > 100, total < 2 * success", func(t *testing.T) {
 		b := getSREBreaker()
 		size := rand.Intn(10000000)
-		succ := int(math.Ceil(float64(size))) + 1
+		succ := size + 1
 		markSuccess(b, succ)
 		markFailed(b, size-succ)
 		assert.Equal(t, b.Allow(context.Background()), nil)
@@ -111,7 +111,7 @@ func TestSRESelfProtection(t *testing.T) {
 
 func TestSRESummary(t *testing.T) {
 	var (
-		b           *sreBreaker
+		b           *Breaker
 		succ, total int64
 	)
 
@@ -169,7 +169,7 @@ func BenchmarkSreBreakerAllow(b *testing.B) {
 	breaker := getSREBreaker()
 	b.ResetTimer()
 	for i := 0; i <= b.N; i++ {
-		breaker.Allow(context.Background())
+		_ = breaker.Allow(context.Background())
 		if i%2 == 0 {
 			breaker.MarkSuccess()
 		} else {

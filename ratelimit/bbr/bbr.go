@@ -28,7 +28,9 @@ var (
 
 type (
 	cpuGetter func() int64
-	Option    func(*options)
+
+	// Option function for bbr limiter
+	Option func(*options)
 )
 
 func init() {
@@ -49,15 +51,15 @@ func cpuproc() {
 	for range ticker.C {
 		stat := &cpu.Stat{}
 		cpu.ReadStat(stat)
-		prevCpu := atomic.LoadInt64(&gCPU)
-		curCpu := int64(float64(prevCpu)*decay + float64(stat.Usage)*(1.0-decay))
-		atomic.StoreInt64(&gCPU, curCpu)
+		prevCPU := atomic.LoadInt64(&gCPU)
+		curCPU := int64(float64(prevCPU)*decay + float64(stat.Usage)*(1.0-decay))
+		atomic.StoreInt64(&gCPU, curCPU)
 	}
 }
 
 // Stat contains the metrics snapshot of bbr.
 type Stat struct {
-	Cpu         int64
+	CPU         int64
 	InFlight    int64
 	MaxInFlight int64
 	MinRt       int64
@@ -82,18 +84,21 @@ type options struct {
 	CPUThreshold int64
 }
 
+// WithWindowSize set window size
 func WithWindowSize(size time.Duration) Option {
 	return func(o *options) {
 		o.WindowSize = size
 	}
 }
 
+// WithBucketNum set bucket number
 func WithBucketNum(num int) Option {
 	return func(o *options) {
 		o.BucketNum = num
 	}
 }
 
+// WithCPUThreshold set cpu threshold
 func WithCPUThreshold(threshold int64) Option {
 	return func(o *options) {
 		o.CPUThreshold = threshold
@@ -119,6 +124,7 @@ type BBR struct {
 	opts *options
 }
 
+// NewLimiter returns a bbr limiter
 func NewLimiter(opts ...Option) *BBR {
 	options := defaultOpts
 	for _, o := range opts {
@@ -259,7 +265,7 @@ func (l *BBR) shouldDrop() bool {
 // Stat tasks a snapshot of the bbr limiter.
 func (l *BBR) Stat() Stat {
 	return Stat{
-		Cpu:         l.cpu(),
+		CPU:         l.cpu(),
 		InFlight:    atomic.LoadInt64(&l.inFlight),
 		MinRt:       l.minRT(),
 		MaxPass:     l.maxPASS(),

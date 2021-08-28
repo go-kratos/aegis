@@ -7,7 +7,7 @@ import (
 )
 
 func TestWindowResetWindow(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	for i := 0; i < opts.Size; i++ {
 		window.Append(i, 1.0)
@@ -19,7 +19,7 @@ func TestWindowResetWindow(t *testing.T) {
 }
 
 func TestWindowResetBucket(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	for i := 0; i < opts.Size; i++ {
 		window.Append(i, 1.0)
@@ -31,7 +31,7 @@ func TestWindowResetBucket(t *testing.T) {
 }
 
 func TestWindowResetBuckets(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	for i := 0; i < opts.Size; i++ {
 		window.Append(i, 1.0)
@@ -43,7 +43,7 @@ func TestWindowResetBuckets(t *testing.T) {
 }
 
 func TestWindowAppend(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	for i := 0; i < opts.Size; i++ {
 		window.Append(i, 1.0)
@@ -54,7 +54,7 @@ func TestWindowAppend(t *testing.T) {
 }
 
 func TestWindowAdd(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	window.Append(0, 1.0)
 	window.Add(0, 1.0)
@@ -62,7 +62,7 @@ func TestWindowAdd(t *testing.T) {
 }
 
 func TestWindowSize(t *testing.T) {
-	opts := WindowOpts{Size: 3}
+	opts := Options{Size: 3}
 	window := NewWindow(opts)
 	assert.Equal(t, window.Size(), 3)
 }
