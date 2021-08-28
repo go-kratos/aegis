@@ -1,0 +1,24 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  skip-files:
+    - ".*_test\\.go$"
+
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - govet
+    - gosimple
+    - gofmt
+    - goconst
+    - golint
+    - goimports
+    - ineffassign
+    - prealloc
+    - revive
+    - staticcheck
+    - unused
+linters-settings:
+  govet:
+    check-shadowing: true

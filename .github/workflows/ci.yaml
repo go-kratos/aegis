@@ -1,14 +1,13 @@
-name: Test
+name: Build & Test
 
 on:
   push:
-    branches: [main]
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
+    branches:
+      - main
   pull_request:
 
 jobs:
-  test:
+  build:
     name: Test
     runs-on: ubuntu-latest
     strategy:
@@ -27,10 +26,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.17
 
-      - name: Dependencies
+      - name: Get Dependencies
+        run: make deps PKG_DIR=${{ matrix.case.dir }}
 
-      - name: Lint
+      - name: Golangci Lint
+        run: make lint PKG_DIR=${{ matrix.case.dir }}
 
-      - name: Test
+      - name: Go Test
+        run: make test PKG_DIR=${{ matrix.case.dir }}
