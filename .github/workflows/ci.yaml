@@ -1,14 +1,13 @@
-name: Build & Test
-
+name: CI
 on:
   push:
+  pull_request:
     branches:
       - main
-  pull_request:
 
 jobs:
   build:
-    name: Test
+    name: Build & Test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -16,7 +15,7 @@ jobs:
         case:
           - { name: "cpu", dir: "pkg/cpu" }
           - { name: "window", dir: "pkg/window" }
-          - { name: "SRE breaker", dir: "breaker/sre" }
+          - { name: "sre breaker", dir: "breaker/sre" }
           - { name: "bbr limiter", dir: "ratelimit/bbr" }
 
     steps:
