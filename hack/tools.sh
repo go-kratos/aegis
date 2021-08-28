@@ -13,7 +13,7 @@ LINTER_CONF=${HOME}/.golangci.yml
 function test() {
 	cd "$1"
 	echo "test $(sed -n 1p go.mod | cut -d ' ' -f2)"
-	go test -v ./...
+	go test -v -race ./...
 }
 
 function deps() {
