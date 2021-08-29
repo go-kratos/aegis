@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-kratos/sra"
 	"github.com/go-kratos/sra/pkg/window"
 )
 
@@ -174,4 +175,18 @@ func (b *sreBreaker) Mark(isSuccess bool) {
 	} else {
 		b.stat.Add(0)
 	}
+}
+
+func (b *sreBreaker) Ward(ctx context.Context, opts ...sra.WardOption) (sra.Done, error) {
+	err := b.Allow(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return func(e error, opts ...sra.DoneOption) {
+		if e != nil {
+			b.Mark(false)
+		} else {
+			b.Mark(true)
+		}
+	}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-kratos/sra"
 	"github.com/go-kratos/sra/pkg/cpu"
 	"github.com/go-kratos/sra/pkg/window"
 )
@@ -24,6 +25,8 @@ var (
 	// ErrLimitExceed is returned when the rate limiter is
 	// triggered and the request is rejected due to limit exceeded.
 	ErrLimitExceed = errors.New("rate limit exceeded")
+
+	_ sra.Warden = &BBR{}
 )
 
 type (
@@ -280,5 +283,17 @@ func (l *BBR) Allow(ctx context.Context) (func(), error) {
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
 		l.passStat.Add(1)
+	}, nil
+}
+
+func (l *BBR) Ward(ctx context.Context, opts ...sra.WardOption) (sra.Done, error) {
+	done, err := l.Allow(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return func(err error, opts ...sra.DoneOption) {
+		if done != nil {
+			done()
+		}
 	}, nil
 }
