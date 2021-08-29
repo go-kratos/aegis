@@ -28,6 +28,8 @@ const (
 
 var (
 	ErrBreakerTriggered = errors.New("circuit breaker triggered")
+
+	_ sra.Warden = &sreBreaker{}
 )
 
 // Config broker config.
