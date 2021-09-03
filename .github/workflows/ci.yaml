@@ -15,7 +15,7 @@ jobs:
         case:
           - { name: "cpu", dir: "pkg/cpu" }
           - { name: "window", dir: "pkg/window" }
-          - { name: "sre breaker", dir: "breaker/sre" }
+          - { name: "sre breaker", dir: "circuitbreaker/sre" }
           - { name: "bbr limiter", dir: "ratelimit/bbr" }
 
     steps:

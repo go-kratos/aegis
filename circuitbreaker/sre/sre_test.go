@@ -1,7 +1,6 @@
 package sre
 
 import (
-	"context"
 	"math"
 	"math/rand"
 	"testing"
@@ -55,30 +54,30 @@ func markFailed(b *Breaker, count int) {
 
 func testSREClose(t *testing.T, b *Breaker) {
 	markSuccess(b, 80)
-	assert.Equal(t, b.Allow(context.Background()), nil)
+	assert.Equal(t, b.Allow(), nil)
 	markSuccess(b, 120)
-	assert.Equal(t, b.Allow(context.Background()), nil)
+	assert.Equal(t, b.Allow(), nil)
 }
 
 func testSREOpen(t *testing.T, b *Breaker) {
 	markSuccess(b, 100)
-	assert.Equal(t, b.Allow(context.Background()), nil)
+	assert.Equal(t, b.Allow(), nil)
 	markFailed(b, 10000000)
-	assert.NotEqual(t, b.Allow(context.Background()), nil)
+	assert.NotEqual(t, b.Allow(), nil)
 }
 
 func testSREHalfOpen(t *testing.T, b *Breaker) {
 	// failback
-	assert.Equal(t, b.Allow(context.Background()), nil)
+	assert.Equal(t, b.Allow(), nil)
 	t.Run("allow single failed", func(t *testing.T) {
 		markFailed(b, 10000000)
-		assert.NotEqual(t, b.Allow(context.Background()), nil)
+		assert.NotEqual(t, b.Allow(), nil)
 	})
 	time.Sleep(2 * time.Second)
 	t.Run("allow single succeed", func(t *testing.T) {
-		assert.Equal(t, b.Allow(context.Background()), nil)
+		assert.Equal(t, b.Allow(), nil)
 		markSuccess(b, 10000000)
-		assert.Equal(t, b.Allow(context.Background()), nil)
+		assert.Equal(t, b.Allow(), nil)
 	})
 }
 
@@ -97,7 +96,7 @@ func TestSRESelfProtection(t *testing.T) {
 	t.Run("total request < 100", func(t *testing.T) {
 		b := getSREBreaker()
 		markFailed(b, 99)
-		assert.Equal(t, b.Allow(context.Background()), nil)
+		assert.Equal(t, b.Allow(), nil)
 	})
 	t.Run("total request > 100, total < 2 * success", func(t *testing.T) {
 		b := getSREBreaker()
@@ -105,7 +104,7 @@ func TestSRESelfProtection(t *testing.T) {
 		succ := size + 1
 		markSuccess(b, succ)
 		markFailed(b, size-succ)
-		assert.Equal(t, b.Allow(context.Background()), nil)
+		assert.Equal(t, b.Allow(), nil)
 	})
 }
 
@@ -169,7 +168,7 @@ func BenchmarkSreBreakerAllow(b *testing.B) {
 	breaker := getSREBreaker()
 	b.ResetTimer()
 	for i := 0; i <= b.N; i++ {
-		_ = breaker.Allow(context.Background())
+		_ = breaker.Allow()
 		if i%2 == 0 {
 			breaker.MarkSuccess()
 		} else {

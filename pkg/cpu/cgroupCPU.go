@@ -2,12 +2,11 @@ package cpu
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	pscpu "github.com/shirou/gopsutil/cpu"
 )
 
@@ -21,21 +20,18 @@ type cgroupCPU struct {
 }
 
 func newCgroupCPU() (cpu *cgroupCPU, err error) {
-	var cores int
-	cores, err = pscpu.Counts(true)
+	cores, err := pscpu.Counts(true)
 	if err != nil || cores == 0 {
 		var cpus []uint64
 		cpus, err = perCPUUsage()
 		if err != nil {
-			err = errors.Errorf("perCPUUsage() failed!err:=%v", err)
-			return
+			return nil, err
 		}
 		cores = len(cpus)
 	}
 
 	sets, err := cpuSets()
 	if err != nil {
-		err = errors.Errorf("cpuSets() failed!err:=%v", err)
 		return
 	}
 	quota := float64(len(sets))
@@ -43,7 +39,6 @@ func newCgroupCPU() (cpu *cgroupCPU, err error) {
 	if err == nil && cq != -1 {
 		var period uint64
 		if period, err = cpuPeriod(); err != nil {
-			err = errors.Errorf("cpuPeriod() failed!err:=%v", err)
 			return
 		}
 		limit := float64(cq) / float64(period)
@@ -55,12 +50,10 @@ func newCgroupCPU() (cpu *cgroupCPU, err error) {
 
 	preSystem, err := systemCPUUsage()
 	if err != nil {
-		err = errors.Errorf("systemCPUUsage() failed!err:=%v", err)
 		return
 	}
 	preTotal, err := totalCPUUsage()
 	if err != nil {
-		err = errors.Errorf("totalCPUUsage() failed!err:=%v", err)
 		return
 	}
 	cpu = &cgroupCPU{
@@ -104,7 +97,7 @@ func (cpu *cgroupCPU) Info() Info {
 const nanoSecondsPerSecond = 1e9
 
 // ErrNoCFSLimit is no quota limit
-var ErrNoCFSLimit = errors.Errorf("no quota limit")
+var ErrNoCFSLimit = errors.New("no quota limit")
 
 var clockTicksPerSecond = uint64(getClockTicks())
 
@@ -132,21 +125,19 @@ func systemCPUUsage() (usage uint64, err error) {
 	bufReader.Reset(f)
 	for err == nil {
 		if line, err = bufReader.ReadString('\n'); err != nil {
-			err = errors.WithStack(err)
 			return
 		}
 		parts := strings.Fields(line)
 		switch parts[0] {
 		case "cpu":
 			if len(parts) < 8 {
-				err = errors.WithStack(fmt.Errorf("bad format of cpu stats"))
+				err = errors.New("bad format of cpu stats")
 				return
 			}
 			var totalClockTicks uint64
 			for _, i := range parts[1:8] {
 				var v uint64
 				if v, err = strconv.ParseUint(i, 10, 64); err != nil {
-					err = errors.WithStack(fmt.Errorf("error parsing cpu stats"))
 					return
 				}
 				totalClockTicks += v
@@ -155,7 +146,7 @@ func systemCPUUsage() (usage uint64, err error) {
 			return
 		}
 	}
-	err = errors.Errorf("bad stats format")
+	err = errors.New("bad stats format")
 	return
 }
 

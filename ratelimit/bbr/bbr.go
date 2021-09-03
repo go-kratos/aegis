@@ -1,29 +1,21 @@
 package bbr
 
 import (
-	"context"
-	"errors"
 	"math"
 	"sync/atomic"
 	"time"
 
 	"github.com/go-kratos/sra/pkg/cpu"
+	"github.com/go-kratos/sra/ratelimit"
+
 	"github.com/go-kratos/sra/pkg/window"
 )
 
 var (
-	gCPU        int64
-	decay       = 0.95
-	initTime    = time.Now()
-	defaultOpts = &options{
-		WindowSize:   time.Second * 10,
-		BucketNum:    100,
-		CPUThreshold: 800,
-	}
+	gCPU  int64
+	decay = 0.95
 
-	// ErrLimitExceed is returned when the rate limiter is
-	// triggered and the request is rejected due to limit exceeded.
-	ErrLimitExceed = errors.New("rate limit exceeded")
+	_ ratelimit.Limiter = &BBR{}
 )
 
 type (
@@ -66,10 +58,10 @@ type Stat struct {
 	MaxPass     int64
 }
 
-// CounterCache is used to cache maxPASS and minRt result.
+// counterCache is used to cache maxPASS and minRt result.
 // Value of current bucket is not counted in real time.
 // Cache time is equal to a bucket duration.
-type CounterCache struct {
+type counterCache struct {
 	val  int64
 	time time.Time
 }
@@ -77,28 +69,28 @@ type CounterCache struct {
 // options of bbr limiter.
 type options struct {
 	// WindowSize defines time duration per window
-	WindowSize time.Duration
+	Window time.Duration
 	// BucketNum defines bucket number for each window
-	BucketNum int
+	Bucket int
 	// CPUThreshold
 	CPUThreshold int64
 }
 
-// WithWindowSize set window size
-func WithWindowSize(size time.Duration) Option {
+// WithWindow with window size.
+func WithWindow(d time.Duration) Option {
 	return func(o *options) {
-		o.WindowSize = size
+		o.Window = d
 	}
 }
 
-// WithBucketNum set bucket number
-func WithBucketNum(num int) Option {
+// WithBucket with bucket ize.
+func WithBucket(b int) Option {
 	return func(o *options) {
-		o.BucketNum = num
+		o.Bucket = b
 	}
 }
 
-// WithCPUThreshold set cpu threshold
+// WithCPUThreshold with cpu threshold;
 func WithCPUThreshold(threshold int64) Option {
 	return func(o *options) {
 		o.CPUThreshold = threshold
@@ -114,35 +106,38 @@ type BBR struct {
 	rtStat          window.RollingCounter
 	inFlight        int64
 	bucketPerSecond int64
-	bucketSize      time.Duration
+	bucketDuration  time.Duration
 
 	// prevDropTime defines previous start drop since initTime
 	prevDropTime atomic.Value
 	maxPASSCache atomic.Value
 	minRtCache   atomic.Value
 
-	opts *options
+	opts options
 }
 
 // NewLimiter returns a bbr limiter
 func NewLimiter(opts ...Option) *BBR {
-	options := defaultOpts
+	opt := options{
+		Window:       time.Second * 10,
+		Bucket:       100,
+		CPUThreshold: 800,
+	}
 	for _, o := range opts {
-		o(options)
+		o(&opt)
 	}
 
-	size := options.BucketNum
-	bucketSize := options.WindowSize / time.Duration(options.BucketNum)
-	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: size, BucketDuration: bucketSize})
-	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: size, BucketDuration: bucketSize})
+	bucketDuration := opt.Window / time.Duration(opt.Bucket)
+	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: opt.Bucket, BucketDuration: bucketDuration})
+	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: opt.Bucket, BucketDuration: bucketDuration})
 
 	limiter := &BBR{
-		cpu:             func() int64 { return atomic.LoadInt64(&gCPU) },
-		opts:            options,
+		opts:            opt,
 		passStat:        passStat,
 		rtStat:          rtStat,
-		bucketPerSecond: int64(time.Second / bucketSize),
-		bucketSize:      bucketSize,
+		bucketDuration:  bucketDuration,
+		bucketPerSecond: int64(time.Second / bucketDuration),
+		cpu:             func() int64 { return atomic.LoadInt64(&gCPU) },
 	}
 	return limiter
 }
@@ -150,14 +145,14 @@ func NewLimiter(opts ...Option) *BBR {
 func (l *BBR) maxPASS() int64 {
 	passCache := l.maxPASSCache.Load()
 	if passCache != nil {
-		ps := passCache.(*CounterCache)
+		ps := passCache.(*counterCache)
 		if l.timespan(ps.time) < 1 {
 			return ps.val
 		}
 	}
 	rawMaxPass := int64(l.passStat.Reduce(func(iterator window.Iterator) float64 {
 		var result = 1.0
-		for i := 1; iterator.Next() && i < l.opts.BucketNum; i++ {
+		for i := 1; iterator.Next() && i < l.opts.Bucket; i++ {
 			bucket := iterator.Bucket()
 			count := 0.0
 			for _, p := range bucket.Points {
@@ -170,7 +165,7 @@ func (l *BBR) maxPASS() int64 {
 	if rawMaxPass == 0 {
 		rawMaxPass = 1
 	}
-	l.maxPASSCache.Store(&CounterCache{
+	l.maxPASSCache.Store(&counterCache{
 		val:  rawMaxPass,
 		time: time.Now(),
 	})
@@ -181,24 +176,24 @@ func (l *BBR) maxPASS() int64 {
 // since lastTime, if it is one bucket duration earlier than
 // the last recorded time, it will return the BucketNum.
 func (l *BBR) timespan(lastTime time.Time) int {
-	v := int(time.Since(lastTime) / l.bucketSize)
+	v := int(time.Since(lastTime) / l.bucketDuration)
 	if v > -1 {
 		return v
 	}
-	return l.opts.BucketNum
+	return l.opts.Bucket
 }
 
 func (l *BBR) minRT() int64 {
 	rtCache := l.minRtCache.Load()
 	if rtCache != nil {
-		rc := rtCache.(*CounterCache)
+		rc := rtCache.(*counterCache)
 		if l.timespan(rc.time) < 1 {
 			return rc.val
 		}
 	}
 	rawMinRT := int64(math.Ceil(l.rtStat.Reduce(func(iterator window.Iterator) float64 {
 		var result = math.MaxFloat64
-		for i := 1; iterator.Next() && i < l.opts.BucketNum; i++ {
+		for i := 1; iterator.Next() && i < l.opts.Bucket; i++ {
 			bucket := iterator.Bucket()
 			if len(bucket.Points) == 0 {
 				continue
@@ -215,7 +210,7 @@ func (l *BBR) minRT() int64 {
 	if rawMinRT <= 0 {
 		rawMinRT = 1
 	}
-	l.minRtCache.Store(&CounterCache{
+	l.minRtCache.Store(&counterCache{
 		val:  rawMinRT,
 		time: time.Now(),
 	})
@@ -227,8 +222,7 @@ func (l *BBR) maxInFlight() int64 {
 }
 
 func (l *BBR) shouldDrop() bool {
-	curTime := time.Since(initTime)
-
+	now := time.Duration(time.Now().UnixNano())
 	if l.cpu() < l.opts.CPUThreshold {
 		// current cpu payload below the threshold
 		prevDropTime, _ := l.prevDropTime.Load().(time.Duration)
@@ -237,7 +231,7 @@ func (l *BBR) shouldDrop() bool {
 			// accept current request
 			return false
 		}
-		if curTime-prevDropTime <= time.Second {
+		if time.Duration(now-prevDropTime) <= time.Second {
 			// just start drop one second ago,
 			// check current inflight count
 			inFlight := atomic.LoadInt64(&l.inFlight)
@@ -246,7 +240,6 @@ func (l *BBR) shouldDrop() bool {
 		l.prevDropTime.Store(time.Duration(0))
 		return false
 	}
-
 	// current cpu payload exceeds the threshold
 	inFlight := atomic.LoadInt64(&l.inFlight)
 	drop := inFlight > 1 && inFlight > l.maxInFlight()
@@ -257,7 +250,7 @@ func (l *BBR) shouldDrop() bool {
 			return drop
 		}
 		// store start drop time
-		l.prevDropTime.Store(curTime)
+		l.prevDropTime.Store(now)
 	}
 	return drop
 }
@@ -266,23 +259,23 @@ func (l *BBR) shouldDrop() bool {
 func (l *BBR) Stat() Stat {
 	return Stat{
 		CPU:         l.cpu(),
-		InFlight:    atomic.LoadInt64(&l.inFlight),
 		MinRt:       l.minRT(),
 		MaxPass:     l.maxPASS(),
 		MaxInFlight: l.maxInFlight(),
+		InFlight:    atomic.LoadInt64(&l.inFlight),
 	}
 }
 
 // Allow checks all inbound traffic.
 // Once overload is detected, it raises limit.ErrLimitExceed error.
-func (l *BBR) Allow(ctx context.Context) (func(), error) {
+func (l *BBR) Allow() (ratelimit.Done, error) {
 	if l.shouldDrop() {
-		return nil, ErrLimitExceed
+		return nil, ratelimit.ErrLimitExceed
 	}
 	atomic.AddInt64(&l.inFlight, 1)
-	stime := time.Since(initTime)
-	return func() {
-		rt := int64((time.Since(initTime) - stime) / time.Millisecond)
+	start := time.Now().UnixNano()
+	return func(ratelimit.DoneInfo) {
+		rt := (time.Now().UnixNano() - start) / int64(time.Millisecond)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
 		l.passStat.Add(1)
