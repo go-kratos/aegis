@@ -2,13 +2,13 @@ package sre
 
 import (
 	"context"
-	"errors"
 	"math"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/go-kratos/sra/circuitbreaker"
 	"github.com/go-kratos/sra/pkg/window"
 )
 
@@ -27,8 +27,7 @@ const (
 )
 
 var (
-	// ErrBreakerTriggered is breaker triggered error
-	ErrBreakerTriggered = errors.New("sre circuit breaker triggered")
+	_ circuitbreaker.CircuitBreaker = &Breaker{}
 )
 
 // Config broker config.
@@ -128,7 +127,7 @@ func (b *Breaker) summary() (success int64, total int64) {
 }
 
 // Allow request if error returns nil
-func (b *Breaker) Allow(_ context.Context) error {
+func (b *Breaker) Allow(context.Context) error {
 	success, total := b.summary()
 	k := b.k * float64(success)
 
@@ -146,7 +145,7 @@ func (b *Breaker) Allow(_ context.Context) error {
 	drop := b.trueOnProba(dr)
 
 	if drop {
-		return ErrBreakerTriggered
+		return circuitbreaker.ErrNotAllowed
 	}
 	return nil
 }
