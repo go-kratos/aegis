@@ -12,6 +12,7 @@ import (
 	"github.com/go-kratos/sra/pkg/window"
 )
 
+// Option is sre breaker option function
 type Option func(*config)
 
 const (
@@ -26,7 +27,8 @@ const (
 )
 
 var (
-	ErrBreakerTriggered = errors.New("circuit breaker triggered")
+	// ErrBreakerTriggered is breaker triggered error
+	ErrBreakerTriggered = errors.New("sre circuit breaker triggered")
 )
 
 // Config broker config.
@@ -61,15 +63,15 @@ func WithWindowSize(size time.Duration) Option {
 	}
 }
 
-// WithBuckerNumber set the bucket number in a window duration
+// WithBucketNumber set the bucket number in a window duration
 func WithBucketNumber(num int) Option {
 	return func(c *config) {
 		c.bucket = num
 	}
 }
 
-// sreBreaker is a sre CircuitBreaker pattern.
-type sreBreaker struct {
+// Breaker is a sre CircuitBreaker pattern.
+type Breaker struct {
 	stat window.RollingCounter
 	r    *rand.Rand
 	// rand.New(...) returns a non thread safe object
@@ -83,7 +85,8 @@ type sreBreaker struct {
 	state int32
 }
 
-func NewBreaker(opts ...Option) *sreBreaker {
+// NewBreaker return a sreBresker with options
+func NewBreaker(opts ...Option) *Breaker {
 	c := &config{
 		k:       1.5,
 		request: 100,
@@ -100,7 +103,7 @@ func NewBreaker(opts ...Option) *sreBreaker {
 		BucketDuration: time.Duration(int64(c.window) / int64(c.bucket)),
 	}
 	stat := window.NewRollingCounter(counterOpts)
-	return &sreBreaker{
+	return &Breaker{
 		stat: stat,
 		r:    rand.New(rand.NewSource(time.Now().UnixNano())),
 
@@ -110,7 +113,7 @@ func NewBreaker(opts ...Option) *sreBreaker {
 	}
 }
 
-func (b *sreBreaker) summary() (success int64, total int64) {
+func (b *Breaker) summary() (success int64, total int64) {
 	b.stat.Reduce(func(iterator window.Iterator) float64 {
 		for iterator.Next() {
 			bucket := iterator.Bucket()
@@ -124,7 +127,8 @@ func (b *sreBreaker) summary() (success int64, total int64) {
 	return
 }
 
-func (b *sreBreaker) Allow(_ context.Context) error {
+// Allow request if error returns nil
+func (b *Breaker) Allow(_ context.Context) error {
 	success, total := b.summary()
 	k := b.k * float64(success)
 
@@ -147,28 +151,32 @@ func (b *sreBreaker) Allow(_ context.Context) error {
 	return nil
 }
 
-func (b *sreBreaker) MarkSuccess() {
+// MarkSuccess mark requeest is success
+func (b *Breaker) MarkSuccess() {
 	b.stat.Add(1)
 }
 
-func (b *sreBreaker) MarkFailed() {
+// MarkFailed mark request is failed
+func (b *Breaker) MarkFailed() {
 	// NOTE: when client reject requets locally, continue add counter let the
 	// drop ratio higher.
 	b.stat.Add(0)
 }
 
-func (b *sreBreaker) trueOnProba(proba float64) (truth bool) {
+func (b *Breaker) trueOnProba(proba float64) (truth bool) {
 	b.randLock.Lock()
 	truth = b.r.Float64() < proba
 	b.randLock.Unlock()
 	return
 }
 
-func (b *sreBreaker) Check(err error) bool {
+// Check err if request is success
+func (b *Breaker) Check(err error) bool {
 	return err == nil
 }
 
-func (b *sreBreaker) Mark(isSuccess bool) {
+// Mark request
+func (b *Breaker) Mark(isSuccess bool) {
 	if isSuccess {
 		b.stat.Add(1)
 	} else {

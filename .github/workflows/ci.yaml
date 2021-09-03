@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        case:
+          - { name: "cpu", dir: "pkg/cpu" }
+          - { name: "window", dir: "pkg/window" }
+          - { name: "sre breaker", dir: "breaker/sre" }
+          - { name: "bbr limiter", dir: "ratelimit/bbr" }
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Get Dependencies
+        run: make deps PKG_DIR=${{ matrix.case.dir }}
+
+      - name: GolangCI Lint
+        run: make lint PKG_DIR=${{ matrix.case.dir }}
+
+      - name: Go Test
+        run: make test PKG_DIR=${{ matrix.case.dir }}
+
+      - name: Go Build
+        run: make build PKG_DIR=${{ matrix.case.dir }}

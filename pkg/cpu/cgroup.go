@@ -74,7 +74,7 @@ func (c *cgroup) CPUSetCPUs() ([]uint64, error) {
 	if err != nil {
 		return nil, err
 	}
-	var sets []uint64
+	sets := make([]uint64, 0)
 	for k := range cpus {
 		sets = append(sets, uint64(k))
 	}
