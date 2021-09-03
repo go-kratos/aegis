@@ -53,7 +53,7 @@ type rollingCounter struct {
 
 // NewRollingCounter creates a new RollingCounter bases on RollingCounterOpts.
 func NewRollingCounter(opts RollingCounterOpts) RollingCounter {
-	window := NewWindow(WindowOpts{Size: opts.Size})
+	window := NewWindow(Options{Size: opts.Size})
 	policy := NewRollingPolicy(window, RollingPolicyOpts{BucketDuration: opts.BucketDuration})
 	return &rollingCounter{
 		policy: policy,

@@ -36,13 +36,13 @@ type Window struct {
 	size    int
 }
 
-// WindowOpts contains the arguments for creating Window.
-type WindowOpts struct {
+// Options contains the arguments for creating Window.
+type Options struct {
 	Size int
 }
 
 // NewWindow creates a new Window based on WindowOpts.
-func NewWindow(opts WindowOpts) *Window {
+func NewWindow(opts Options) *Window {
 	buckets := make([]Bucket, opts.Size)
 	for offset := range buckets {
 		buckets[offset].Points = make([]float64, 0)

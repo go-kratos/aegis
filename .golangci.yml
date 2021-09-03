@@ -1,0 +1,21 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - govet
+    - gosimple
+    - gofmt
+    - goconst
+    - goimports
+    - ineffassign
+    - prealloc
+    - revive
+    - staticcheck
+    - unused
+linters-settings:
+  govet:
+    check-shadowing: true
