@@ -1,7 +1,6 @@
 package sre
 
 import (
-	"context"
 	"math"
 	"math/rand"
 	"sync"
@@ -13,7 +12,7 @@ import (
 )
 
 // Option is sre breaker option function
-type Option func(*config)
+type Option func(*options)
 
 const (
 	// StateOpen when circuit breaker open, request not allowed, after sleep
@@ -30,42 +29,41 @@ var (
 	_ circuitbreaker.CircuitBreaker = &Breaker{}
 )
 
-// Config broker config.
-type config struct {
-	k float64
-
-	window  time.Duration
-	bucket  int
+// options is a breaker options.
+type options struct {
+	success float64
 	request int64
+	bucket  int
+	window  time.Duration
 }
 
-// WithKValue set the K value of sre breaker, default K is 1.5
+// WithSuccess set the K value of sre breaker, default success is 0.5
 // Reducing the K will make adaptive throttling behave more aggressively,
 // Increasing the K will make adaptive throttling behave less aggressively.
-func WithKValue(K float64) Option {
-	return func(c *config) {
-		c.k = K
+func WithSuccess(s float64) Option {
+	return func(c *options) {
+		c.success = s
 	}
 }
 
-// WithMinimumRequest set the minimum number of requests allowed
-func WithMinimumRequest(request int64) Option {
-	return func(c *config) {
-		c.request = request
+// WithRequest set the minimum number of requests allowed
+func WithRequest(r int64) Option {
+	return func(c *options) {
+		c.request = r
 	}
 }
 
-// WithWindowSize set the duration size of the statistical window
-func WithWindowSize(size time.Duration) Option {
-	return func(c *config) {
-		c.window = size
+// WithWindow set the duration size of the statistical window
+func WithWindow(d time.Duration) Option {
+	return func(c *options) {
+		c.window = d
 	}
 }
 
-// WithBucketNumber set the bucket number in a window duration
-func WithBucketNumber(num int) Option {
-	return func(c *config) {
-		c.bucket = num
+// WithBucket set the bucket number in a window duration
+func WithBucket(b int) Option {
+	return func(c *options) {
+		c.bucket = b
 	}
 }
 
@@ -85,29 +83,26 @@ type Breaker struct {
 }
 
 // NewBreaker return a sreBresker with options
-func NewBreaker(opts ...Option) *Breaker {
-	c := &config{
-		k:       1.5,
+func NewBreaker(opts ...Option) circuitbreaker.CircuitBreaker {
+	opt := options{
+		success: 0.5,
 		request: 100,
 		bucket:  10,
 		window:  3 * time.Second,
 	}
-
 	for _, o := range opts {
-		o(c)
+		o(&opt)
 	}
-
 	counterOpts := window.RollingCounterOpts{
-		Size:           c.bucket,
-		BucketDuration: time.Duration(int64(c.window) / int64(c.bucket)),
+		Size:           opt.bucket,
+		BucketDuration: time.Duration(int64(opt.window) / int64(opt.bucket)),
 	}
 	stat := window.NewRollingCounter(counterOpts)
 	return &Breaker{
-		stat: stat,
-		r:    rand.New(rand.NewSource(time.Now().UnixNano())),
-
-		request: c.request,
-		k:       c.k,
+		stat:    stat,
+		r:       rand.New(rand.NewSource(time.Now().UnixNano())),
+		request: opt.request,
+		k:       1 / opt.success,
 		state:   StateClosed,
 	}
 }
@@ -126,8 +121,8 @@ func (b *Breaker) summary() (success int64, total int64) {
 	return
 }
 
-// Allow request if error returns nil
-func (b *Breaker) Allow(context.Context) error {
+// Allow request if error returns nil.
+func (b *Breaker) Allow() error {
 	success, total := b.summary()
 	k := b.k * float64(success)
 
@@ -167,18 +162,4 @@ func (b *Breaker) trueOnProba(proba float64) (truth bool) {
 	truth = b.r.Float64() < proba
 	b.randLock.Unlock()
 	return
-}
-
-// Check err if request is success
-func (b *Breaker) Check(err error) bool {
-	return err == nil
-}
-
-// Mark request
-func (b *Breaker) Mark(isSuccess bool) {
-	if isSuccess {
-		b.stat.Add(1)
-	} else {
-		b.stat.Add(0)
-	}
 }
