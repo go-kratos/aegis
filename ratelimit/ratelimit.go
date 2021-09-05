@@ -17,7 +17,7 @@ type Done func(DoneInfo)
 
 // DoneInfo is done info.
 type DoneInfo struct {
-	err error
+	Err error
 }
 
 // Limiter is a rate limiter.
@@ -61,7 +61,7 @@ func (g *Group) Do(name string, fn func() error, fbs ...func(error) error) error
 	limit := g.Get(name)
 	done, err := limit.Allow()
 	if err == nil {
-		done(DoneInfo{err: fn()})
+		done(DoneInfo{Err: fn()})
 	}
 	// fallback the request
 	if err != nil {
