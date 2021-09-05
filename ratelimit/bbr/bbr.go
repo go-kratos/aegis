@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	gCPU     int64
-	decay    = 0.95
-	initTime = time.Now()
+	gCPU  int64
+	decay = 0.95
 
 	_ ratelimit.Limiter = &BBR{}
 )
@@ -223,23 +222,23 @@ func (l *BBR) maxInFlight() int64 {
 }
 
 func (l *BBR) shouldDrop() bool {
-	curTime := time.Since(initTime)
+	curTime := time.Now().UnixNano()
 
 	if l.cpu() < l.opts.CPUThreshold {
 		// current cpu payload below the threshold
-		prevDropTime, _ := l.prevDropTime.Load().(time.Duration)
+		prevDropTime, _ := l.prevDropTime.Load().(int64)
 		if prevDropTime == 0 {
 			// haven't start drop,
 			// accept current request
 			return false
 		}
-		if curTime-prevDropTime <= time.Second {
+		if time.Duration(curTime-prevDropTime) <= time.Second {
 			// just start drop one second ago,
 			// check current inflight count
 			inFlight := atomic.LoadInt64(&l.inFlight)
 			return inFlight > 1 && inFlight > l.maxInFlight()
 		}
-		l.prevDropTime.Store(time.Duration(0))
+		l.prevDropTime.Store(int64(0))
 		return false
 	}
 
@@ -247,7 +246,7 @@ func (l *BBR) shouldDrop() bool {
 	inFlight := atomic.LoadInt64(&l.inFlight)
 	drop := inFlight > 1 && inFlight > l.maxInFlight()
 	if drop {
-		prevDrop, _ := l.prevDropTime.Load().(time.Duration)
+		prevDrop, _ := l.prevDropTime.Load().(int64)
 		if prevDrop != 0 {
 			// already started drop, return directly
 			return drop
@@ -276,9 +275,9 @@ func (l *BBR) Allow() (ratelimit.Done, error) {
 		return nil, ratelimit.ErrLimitExceed
 	}
 	atomic.AddInt64(&l.inFlight, 1)
-	stime := time.Since(initTime)
+	stime := time.Now().UnixNano()
 	return func(ratelimit.DoneInfo) {
-		rt := int64((time.Since(initTime) - stime) / time.Millisecond)
+		rt := (time.Now().UnixNano() - stime) / int64(time.Millisecond)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
 		l.passStat.Add(1)

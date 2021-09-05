@@ -273,7 +273,7 @@ func BenchmarkBBRShouldDropUnderUnstableLoad(b *testing.B) {
 		return 500
 	}
 	warmup(bbr, 10000)
-	bbr.prevDropTime.Store(time.Since(initTime))
+	bbr.prevDropTime.Store(time.Now().UnixNano())
 	bbr.inFlight = 1000
 	b.ResetTimer()
 	for i := 0; i <= b.N; i++ {
