@@ -222,37 +222,35 @@ func (l *BBR) maxInFlight() int64 {
 }
 
 func (l *BBR) shouldDrop() bool {
-	curTime := time.Now().UnixNano()
-
+	now := time.Duration(time.Now().UnixNano())
 	if l.cpu() < l.opts.CPUThreshold {
 		// current cpu payload below the threshold
-		prevDropTime, _ := l.prevDropTime.Load().(int64)
+		prevDropTime, _ := l.prevDropTime.Load().(time.Duration)
 		if prevDropTime == 0 {
 			// haven't start drop,
 			// accept current request
 			return false
 		}
-		if time.Duration(curTime-prevDropTime) <= time.Second {
+		if time.Duration(now-prevDropTime) <= time.Second {
 			// just start drop one second ago,
 			// check current inflight count
 			inFlight := atomic.LoadInt64(&l.inFlight)
 			return inFlight > 1 && inFlight > l.maxInFlight()
 		}
-		l.prevDropTime.Store(int64(0))
+		l.prevDropTime.Store(time.Duration(0))
 		return false
 	}
-
 	// current cpu payload exceeds the threshold
 	inFlight := atomic.LoadInt64(&l.inFlight)
 	drop := inFlight > 1 && inFlight > l.maxInFlight()
 	if drop {
-		prevDrop, _ := l.prevDropTime.Load().(int64)
+		prevDrop, _ := l.prevDropTime.Load().(time.Duration)
 		if prevDrop != 0 {
 			// already started drop, return directly
 			return drop
 		}
 		// store start drop time
-		l.prevDropTime.Store(curTime)
+		l.prevDropTime.Store(now)
 	}
 	return drop
 }
@@ -261,10 +259,10 @@ func (l *BBR) shouldDrop() bool {
 func (l *BBR) Stat() Stat {
 	return Stat{
 		CPU:         l.cpu(),
-		InFlight:    atomic.LoadInt64(&l.inFlight),
 		MinRt:       l.minRT(),
 		MaxPass:     l.maxPASS(),
 		MaxInFlight: l.maxInFlight(),
+		InFlight:    atomic.LoadInt64(&l.inFlight),
 	}
 }
 
@@ -275,9 +273,9 @@ func (l *BBR) Allow() (ratelimit.Done, error) {
 		return nil, ratelimit.ErrLimitExceed
 	}
 	atomic.AddInt64(&l.inFlight, 1)
-	stime := time.Now().UnixNano()
+	start := time.Now().UnixNano()
 	return func(ratelimit.DoneInfo) {
-		rt := (time.Now().UnixNano() - stime) / int64(time.Millisecond)
+		rt := (time.Now().UnixNano() - start) / int64(time.Millisecond)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
 		l.passStat.Add(1)

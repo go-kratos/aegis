@@ -43,51 +43,54 @@ type Group struct {
 
 // Get .
 func (g *Group) Get(name string) CircuitBreaker {
-	v, ok := g.val.Load().(map[string]CircuitBreaker)
+	m, ok := g.val.Load().(map[string]CircuitBreaker)
 	if ok {
-		cb, ok := v[name]
+		breaker, ok := m[name]
 		if ok {
-			return cb
+			return breaker
 		}
 	}
 	// slowpath for group don`t have specified name breaker.
 	g.mutex.Lock()
-	nv := make(map[string]CircuitBreaker, len(v)+1)
-	for i, j := range v {
+	nv := make(map[string]CircuitBreaker, len(m)+1)
+	for i, j := range m {
 		nv[i] = j
 	}
-	cb := g.New()
-	nv[name] = cb
+	breaker := g.New()
+	nv[name] = breaker
 	g.val.Store(nv)
 	g.mutex.Unlock()
-	return cb
+	return breaker
 }
 
 // Do runs your function in a synchronous manner, blocking until either your
 // function succeeds or an error is returned, including circuit errors.
 func (g *Group) Do(name string, fn func() error, fbs ...func(error) error) error {
-	cb := g.Get(name)
-	err := cb.Allow()
-	if err != nil {
+	breaker := g.Get(name)
+	err := breaker.Allow()
+	if err == nil {
 		if err = fn(); err == nil {
-			cb.MarkSuccess()
+			breaker.MarkSuccess()
 			return nil
 		}
 		switch v := err.(type) {
 		case ignore:
-			cb.MarkSuccess()
+			breaker.MarkSuccess()
 			err = v.error
 		case drop:
-			cb.MarkFailed()
+			breaker.MarkFailed()
 			err = v.error
 		default:
-			cb.MarkFailed()
+			breaker.MarkFailed()
 		}
 	}
-	oe := err // save origin error
-	for _, fb := range fbs {
-		if err = fb(oe); err == nil {
-			return nil
+	// fallback the request
+	if err != nil {
+		oe := err // save origin error
+		for _, fb := range fbs {
+			if err = fb(oe); err == nil {
+				return nil
+			}
 		}
 	}
 	return err
