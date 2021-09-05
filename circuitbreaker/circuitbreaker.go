@@ -65,7 +65,7 @@ func (g *Group) Get(name string) CircuitBreaker {
 
 // Do runs your function in a synchronous manner, blocking until either your
 // function succeeds or an error is returned, including circuit errors.
-func (g *Group) Do(name string, fn func() error) error {
+func (g *Group) Do(name string, fn func() error, fbs ...func(error) error) error {
 	cb := g.Get(name)
 	err := cb.Allow()
 	if err != nil {
@@ -82,6 +82,12 @@ func (g *Group) Do(name string, fn func() error) error {
 			err = v.error
 		default:
 			cb.MarkFailed()
+		}
+	}
+	oe := err // save origin error
+	for _, fb := range fbs {
+		if err = fb(oe); err == nil {
+			return nil
 		}
 	}
 	return err
