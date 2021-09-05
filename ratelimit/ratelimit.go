@@ -35,24 +35,24 @@ type Group struct {
 
 // Get .
 func (g *Group) Get(name string) Limiter {
-	v, ok := g.val.Load().(map[string]Limiter)
+	m, ok := g.val.Load().(map[string]Limiter)
 	if ok {
-		cb, ok := v[name]
+		limiter, ok := m[name]
 		if ok {
-			return cb
+			return limiter
 		}
 	}
 	// slowpath for group don`t have specified name breaker.
 	g.mutex.Lock()
-	nv := make(map[string]Limiter, len(v)+1)
-	for i, j := range v {
-		nv[i] = j
+	nm := make(map[string]Limiter, len(m)+1)
+	for k, v := range m {
+		nm[k] = v
 	}
-	cb := g.New()
-	nv[name] = cb
-	g.val.Store(nv)
+	limiter := g.New()
+	nm[name] = limiter
+	g.val.Store(nm)
 	g.mutex.Unlock()
-	return cb
+	return limiter
 }
 
 // Do runs your function in a synchronous manner, blocking until either your

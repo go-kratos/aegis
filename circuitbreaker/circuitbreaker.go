@@ -52,13 +52,13 @@ func (g *Group) Get(name string) CircuitBreaker {
 	}
 	// slowpath for group don`t have specified name breaker.
 	g.mutex.Lock()
-	nv := make(map[string]CircuitBreaker, len(m)+1)
-	for i, j := range m {
-		nv[i] = j
+	nm := make(map[string]CircuitBreaker, len(m)+1)
+	for k, v := range m {
+		nm[k] = v
 	}
 	breaker := g.New()
-	nv[name] = breaker
-	g.val.Store(nv)
+	nm[name] = breaker
+	g.val.Store(nm)
 	g.mutex.Unlock()
 	return breaker
 }
