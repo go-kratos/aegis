@@ -1,7 +1,6 @@
 package bbr
 
 import (
-	"context"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -18,18 +17,18 @@ var (
 	cpuThresholdTest = int64(800)
 
 	optsForTest = []Option{
-		WithWindowSize(windowSizeTest),
-		WithBucketNum(bucketNumTest),
+		WithWindow(windowSizeTest),
+		WithBucket(bucketNumTest),
 		WithCPUThreshold(cpuThresholdTest),
 	}
 )
 
 func warmup(bbr *BBR, count int) {
 	for i := 0; i < count; i++ {
-		done, err := bbr.Allow(context.TODO())
+		done, err := bbr.Allow()
 		time.Sleep(time.Millisecond * 1)
 		if err == nil {
-			done()
+			done(nil)
 		}
 	}
 }
@@ -37,17 +36,17 @@ func warmup(bbr *BBR, count int) {
 func forceAllow(bbr *BBR) {
 	inflight := bbr.inFlight
 	bbr.inFlight = bbr.maxPASS() - 1
-	done, err := bbr.Allow(context.TODO())
+	done, err := bbr.Allow()
 	if err == nil {
-		done()
+		done(nil)
 	}
 	bbr.inFlight = inflight
 }
 
 func TestBBR(t *testing.T) {
 	limiter := NewLimiter(
-		WithWindowSize(5*time.Second),
-		WithBucketNum(50),
+		WithWindow(5*time.Second),
+		WithBucket(50),
 		WithCPUThreshold(100))
 	var wg sync.WaitGroup
 	var drop int64
@@ -56,13 +55,13 @@ func TestBBR(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 300; i++ {
-				done, err := limiter.Allow(context.TODO())
+				done, err := limiter.Allow()
 				if err != nil {
 					atomic.AddInt64(&drop, 1)
 				} else {
 					count := rand.Intn(100)
 					time.Sleep(time.Millisecond * time.Duration(count))
-					done()
+					done(nil)
 				}
 			}
 		}()
@@ -211,9 +210,9 @@ func BenchmarkBBRAllowUnderLowLoad(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i <= b.N; i++ {
-		done, err := bbr.Allow(context.TODO())
+		done, err := bbr.Allow()
 		if err == nil {
-			done()
+			done(nil)
 		}
 	}
 }
@@ -232,9 +231,9 @@ func BenchmarkBBRAllowUnderHighLoad(b *testing.B) {
 				bbr.inFlight = rand.Int63n(bbr.maxInFlight() * 2)
 			}
 		}
-		done, err := bbr.Allow(context.TODO())
+		done, err := bbr.Allow()
 		if err == nil {
-			done()
+			done(nil)
 		}
 	}
 }

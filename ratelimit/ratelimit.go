@@ -1,7 +1,6 @@
 package ratelimit
 
 import (
-	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -13,55 +12,35 @@ var (
 	ErrLimitExceed = errors.New("rate limit exceeded")
 )
 
-// Ratelimit .
-type Ratelimit interface {
-	Allow(context.Context) (func(err error), error)
-}
-
-// Option is sre breaker option function
-type Option func(*config)
-
-// Config broker config.
-type config struct {
-}
-
-// New .
-func New(builder func() Ratelimit, opts ...Option) *Group {
-	var cfg config
-	for _, o := range opts {
-		o(&cfg)
-	}
-	g := &Group{
-		new: builder,
-		cfg: &cfg,
-	}
-	g.val.Store(make(map[string]Ratelimit))
-	return g
+// Limiter is a rate limiter.
+type Limiter interface {
+	Allow() (func(err error), error)
 }
 
 // Group .
 type Group struct {
-	cfg   *config
 	mutex sync.Mutex
 	val   atomic.Value
 
-	new func() Ratelimit
+	New func() Limiter
 }
 
 // Get .
-func (g *Group) Get(name string) Ratelimit {
-	v := g.val.Load().(map[string]Ratelimit)
-	cb, ok := v[name]
+func (g *Group) Get(name string) Limiter {
+	v, ok := g.val.Load().(map[string]Limiter)
 	if ok {
-		return cb
+		cb, ok := v[name]
+		if ok {
+			return cb
+		}
 	}
 	// slowpath for group don`t have specified name breaker.
 	g.mutex.Lock()
-	nv := make(map[string]Ratelimit, len(v)+1)
+	nv := make(map[string]Limiter, len(v)+1)
 	for i, j := range v {
 		nv[i] = j
 	}
-	cb = g.new()
+	cb := g.New()
 	nv[name] = cb
 	g.val.Store(nv)
 	g.mutex.Unlock()
@@ -70,19 +49,15 @@ func (g *Group) Get(name string) Ratelimit {
 
 // Do runs your function in a synchronous manner, blocking until either your
 // function succeeds or an error is returned, including circuit errors.
-func (g *Group) Do(ctx context.Context, name string, fn func() error) error {
+func (g *Group) Do(name string, fn func() error) error {
 	limit := g.Get(name)
-	done, err := limit.Allow(ctx)
+	done, err := limit.Allow()
 	if err == nil {
-		defer func() {
-			if _, ok := err.(ignore); ok {
-				done(nil)
-				return
-			}
-			done(err)
-		}()
-
 		err = fn()
+		if _, ok := err.(ignore); ok {
+			err = nil
+		}
+		done(err)
 	}
 	return err
 }
@@ -91,7 +66,7 @@ type ignore struct {
 	error
 }
 
-// Ignore .
+// Ignore ignore the error.
 func Ignore(err error) error {
 	return ignore{err}
 }
