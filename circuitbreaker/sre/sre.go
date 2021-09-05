@@ -11,7 +11,7 @@ import (
 	"github.com/go-kratos/sra/pkg/window"
 )
 
-// Option is sre breaker option function
+// Option is sre breaker option function.
 type Option func(*options)
 
 const (
@@ -37,7 +37,7 @@ type options struct {
 	window  time.Duration
 }
 
-// WithSuccess set the K value of sre breaker, default success is 0.5
+// WithSuccess with the K = 1 / Success value of sre breaker, default success is 0.5
 // Reducing the K will make adaptive throttling behave more aggressively,
 // Increasing the K will make adaptive throttling behave less aggressively.
 func WithSuccess(s float64) Option {
@@ -46,21 +46,21 @@ func WithSuccess(s float64) Option {
 	}
 }
 
-// WithRequest set the minimum number of requests allowed
+// WithRequest with the minimum number of requests allowed.
 func WithRequest(r int64) Option {
 	return func(c *options) {
 		c.request = r
 	}
 }
 
-// WithWindow set the duration size of the statistical window
+// WithWindow with the duration size of the statistical window.
 func WithWindow(d time.Duration) Option {
 	return func(c *options) {
 		c.window = d
 	}
 }
 
-// WithBucket set the bucket number in a window duration
+// WithBucket set the bucket number in a window duration.
 func WithBucket(b int) Option {
 	return func(c *options) {
 		c.bucket = b
@@ -145,12 +145,12 @@ func (b *Breaker) Allow() error {
 	return nil
 }
 
-// MarkSuccess mark requeest is success
+// MarkSuccess mark requeest is success.
 func (b *Breaker) MarkSuccess() {
 	b.stat.Add(1)
 }
 
-// MarkFailed mark request is failed
+// MarkFailed mark request is failed.
 func (b *Breaker) MarkFailed() {
 	// NOTE: when client reject requets locally, continue add counter let the
 	// drop ratio higher.
