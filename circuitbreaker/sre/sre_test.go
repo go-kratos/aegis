@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kratos/sra/pkg/window"
+	"github.com/go-kratos/aegis/pkg/window"
 	"github.com/stretchr/testify/assert"
 )
 

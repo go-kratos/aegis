@@ -5,10 +5,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-kratos/sra/pkg/cpu"
-	"github.com/go-kratos/sra/ratelimit"
-
-	"github.com/go-kratos/sra/pkg/window"
+	"github.com/go-kratos/aegis/pkg/cpu"
+	"github.com/go-kratos/aegis/pkg/window"
+	"github.com/go-kratos/aegis/ratelimit"
 )
 
 var (

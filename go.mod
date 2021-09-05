@@ -1,4 +1,4 @@
-module github.com/go-kratos/sra
+module github.com/go-kratos/aegis
 
 go 1.15
 

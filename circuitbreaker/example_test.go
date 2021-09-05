@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-kratos/sra/circuitbreaker"
-	"github.com/go-kratos/sra/circuitbreaker/sre"
+	"github.com/go-kratos/aegis/circuitbreaker"
+	"github.com/go-kratos/aegis/circuitbreaker/sre"
 )
 
 // This is a example of using a circuit breaker Do() when return nil.

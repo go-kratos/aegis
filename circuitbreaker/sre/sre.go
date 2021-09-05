@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-kratos/sra/circuitbreaker"
-	"github.com/go-kratos/sra/pkg/window"
+	"github.com/go-kratos/aegis/circuitbreaker"
+	"github.com/go-kratos/aegis/pkg/window"
 )
 
 // Option is sre breaker option function.

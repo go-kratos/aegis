@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kratos/sra/pkg/window"
-	"github.com/go-kratos/sra/ratelimit"
+	"github.com/go-kratos/aegis/pkg/window"
+	"github.com/go-kratos/aegis/ratelimit"
 	"github.com/stretchr/testify/assert"
 )
 

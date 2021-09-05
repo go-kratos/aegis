@@ -1,7 +1,7 @@
-# Sra
+# Aegis
 Service Reliability Algorithm
 
-## List
+## Features
 
-- [breaker](./breaker)
+- [circuitbreaker](./circuitbreaker)
 - [ratelimit](./ratelimit)
