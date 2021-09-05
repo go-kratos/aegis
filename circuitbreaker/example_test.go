@@ -44,9 +44,9 @@ func Example_ignore() {
 	}}
 	err := g.Do("do", func() error {
 		// dosomething
-		return circuitbreaker.Ignore(errors.New("fallback"))
+		return circuitbreaker.Ignore(errors.New("ignore"))
 	})
 
 	fmt.Printf("err=%v", err)
-	// Output: err=<nil>
+	// Output: err=ignore
 }

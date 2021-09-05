@@ -76,7 +76,7 @@ func (g *Group) Do(name string, fn func() error) error {
 		switch v := err.(type) {
 		case ignore:
 			cb.MarkSuccess()
-			err = nil
+			err = v.error
 		case drop:
 			err = v.error
 		default:
