@@ -12,9 +12,17 @@ var (
 	ErrLimitExceed = errors.New("rate limit exceeded")
 )
 
+// Done is done function.
+type Done func(DoneInfo)
+
+// DoneInfo is done info.
+type DoneInfo struct {
+	err error
+}
+
 // Limiter is a rate limiter.
 type Limiter interface {
-	Allow() (func(err error), error)
+	Allow() (Done, error)
 }
 
 // Group .
@@ -57,7 +65,7 @@ func (g *Group) Do(name string, fn func() error) error {
 		if _, ok := err.(ignore); ok {
 			err = nil
 		}
-		done(err)
+		done(DoneInfo{err: err})
 	}
 	return err
 }

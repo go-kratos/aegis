@@ -6,10 +6,8 @@ import (
 	"sync/atomic"
 )
 
-var (
-	// ErrNotAllowed error not allowed.
-	ErrNotAllowed = errors.New("circuitbreaker: not allowed for circuit open")
-)
+// ErrNotAllowed error not allowed.
+var ErrNotAllowed = errors.New("circuitbreaker: not allowed for circuit open")
 
 // State .
 type State int

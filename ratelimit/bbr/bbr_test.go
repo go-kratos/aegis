@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/sra/pkg/window"
+	"github.com/go-kratos/sra/ratelimit"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +29,7 @@ func warmup(bbr *BBR, count int) {
 		done, err := bbr.Allow()
 		time.Sleep(time.Millisecond * 1)
 		if err == nil {
-			done(nil)
+			done(ratelimit.DoneInfo{})
 		}
 	}
 }
@@ -38,7 +39,7 @@ func forceAllow(bbr *BBR) {
 	bbr.inFlight = bbr.maxPASS() - 1
 	done, err := bbr.Allow()
 	if err == nil {
-		done(nil)
+		done(ratelimit.DoneInfo{})
 	}
 	bbr.inFlight = inflight
 }
@@ -61,7 +62,7 @@ func TestBBR(t *testing.T) {
 				} else {
 					count := rand.Intn(100)
 					time.Sleep(time.Millisecond * time.Duration(count))
-					done(nil)
+					done(ratelimit.DoneInfo{})
 				}
 			}
 		}()
@@ -212,7 +213,7 @@ func BenchmarkBBRAllowUnderLowLoad(b *testing.B) {
 	for i := 0; i <= b.N; i++ {
 		done, err := bbr.Allow()
 		if err == nil {
-			done(nil)
+			done(ratelimit.DoneInfo{})
 		}
 	}
 }
@@ -233,7 +234,7 @@ func BenchmarkBBRAllowUnderHighLoad(b *testing.B) {
 		}
 		done, err := bbr.Allow()
 		if err == nil {
-			done(nil)
+			done(ratelimit.DoneInfo{})
 		}
 	}
 }

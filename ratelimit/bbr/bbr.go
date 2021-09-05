@@ -271,13 +271,13 @@ func (l *BBR) Stat() Stat {
 
 // Allow checks all inbound traffic.
 // Once overload is detected, it raises limit.ErrLimitExceed error.
-func (l *BBR) Allow() (func(error), error) {
+func (l *BBR) Allow() (ratelimit.Done, error) {
 	if l.shouldDrop() {
 		return nil, ratelimit.ErrLimitExceed
 	}
 	atomic.AddInt64(&l.inFlight, 1)
 	stime := time.Since(initTime)
-	return func(error) {
+	return func(ratelimit.DoneInfo) {
 		rt := int64((time.Since(initTime) - stime) / time.Millisecond)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
