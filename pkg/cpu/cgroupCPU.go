@@ -3,7 +3,6 @@ package cpu
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -23,7 +22,8 @@ type cgroupCPU struct {
 func newCgroupCPU() (cpu *cgroupCPU, err error) {
 	cores, err := pscpu.Counts(true)
 	if err != nil || cores == 0 {
-		cpus, err := perCPUUsage()
+		var cpus []uint64
+		cpus, err = perCPUUsage()
 		if err != nil {
 			return nil, err
 		}
@@ -32,7 +32,6 @@ func newCgroupCPU() (cpu *cgroupCPU, err error) {
 
 	sets, err := cpuSets()
 	if err != nil {
-		err = fmt.Errorf("cpuSets() failed! %v", err)
 		return
 	}
 	quota := float64(len(sets))
