@@ -68,7 +68,7 @@ func (g *Group) Get(name string) CircuitBreaker {
 func (g *Group) Do(name string, fn func() error) error {
 	cb := g.Get(name)
 	err := cb.Allow()
-	if err == nil {
+	if err != nil {
 		if err = fn(); err == nil {
 			cb.MarkSuccess()
 			return nil
@@ -78,6 +78,7 @@ func (g *Group) Do(name string, fn func() error) error {
 			cb.MarkSuccess()
 			err = v.error
 		case drop:
+			cb.MarkFailed()
 			err = v.error
 		default:
 			cb.MarkFailed()
