@@ -59,10 +59,10 @@ type Stat struct {
 	MaxPass     int64
 }
 
-// CounterCache is used to cache maxPASS and minRt result.
+// counterCache is used to cache maxPASS and minRt result.
 // Value of current bucket is not counted in real time.
 // Cache time is equal to a bucket duration.
-type CounterCache struct {
+type counterCache struct {
 	val  int64
 	time time.Time
 }
@@ -146,7 +146,7 @@ func NewLimiter(opts ...Option) *BBR {
 func (l *BBR) maxPASS() int64 {
 	passCache := l.maxPASSCache.Load()
 	if passCache != nil {
-		ps := passCache.(*CounterCache)
+		ps := passCache.(*counterCache)
 		if l.timespan(ps.time) < 1 {
 			return ps.val
 		}
@@ -166,7 +166,7 @@ func (l *BBR) maxPASS() int64 {
 	if rawMaxPass == 0 {
 		rawMaxPass = 1
 	}
-	l.maxPASSCache.Store(&CounterCache{
+	l.maxPASSCache.Store(&counterCache{
 		val:  rawMaxPass,
 		time: time.Now(),
 	})
@@ -187,7 +187,7 @@ func (l *BBR) timespan(lastTime time.Time) int {
 func (l *BBR) minRT() int64 {
 	rtCache := l.minRtCache.Load()
 	if rtCache != nil {
-		rc := rtCache.(*CounterCache)
+		rc := rtCache.(*counterCache)
 		if l.timespan(rc.time) < 1 {
 			return rc.val
 		}
@@ -211,7 +211,7 @@ func (l *BBR) minRT() int64 {
 	if rawMinRT <= 0 {
 		rawMinRT = 1
 	}
-	l.minRtCache.Store(&CounterCache{
+	l.minRtCache.Store(&counterCache{
 		val:  rawMinRT,
 		time: time.Now(),
 	})
