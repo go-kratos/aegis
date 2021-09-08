@@ -267,7 +267,7 @@ func (l *BBR) Stat() Stat {
 
 // Allow checks all inbound traffic.
 // Once overload is detected, it raises limit.ErrLimitExceed error.
-func (l *BBR) Allow() (ratelimit.Done, error) {
+func (l *BBR) Allow() (ratelimit.DoneFunc, error) {
 	if l.shouldDrop() {
 		return nil, ratelimit.ErrLimitExceed
 	}

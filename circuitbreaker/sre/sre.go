@@ -124,10 +124,10 @@ func (b *Breaker) summary() (success int64, total int64) {
 // Allow request if error returns nil.
 func (b *Breaker) Allow() error {
 	success, total := b.summary()
-	k := b.k * float64(success)
+	requests := b.k * float64(success)
 
 	// check overflow requests = K * success
-	if total < b.request || float64(total) < k {
+	if total < b.request || float64(total) < requests {
 		if atomic.LoadInt32(&b.state) == StateOpen {
 			atomic.CompareAndSwapInt32(&b.state, StateOpen, StateClosed)
 		}
@@ -136,7 +136,7 @@ func (b *Breaker) Allow() error {
 	if atomic.LoadInt32(&b.state) == StateClosed {
 		atomic.CompareAndSwapInt32(&b.state, StateClosed, StateOpen)
 	}
-	dr := math.Max(0, (float64(total)-k)/float64(total+1))
+	dr := math.Max(0, (float64(total)-requests)/float64(total+1))
 	drop := b.trueOnProba(dr)
 
 	if drop {
