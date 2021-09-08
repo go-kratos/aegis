@@ -85,7 +85,7 @@ type Breaker struct {
 // NewBreaker return a sreBresker with options
 func NewBreaker(opts ...Option) circuitbreaker.CircuitBreaker {
 	opt := options{
-		success: 0.5,
+		success: 0.6,
 		request: 100,
 		bucket:  10,
 		window:  3 * time.Second,
@@ -123,11 +123,12 @@ func (b *Breaker) summary() (success int64, total int64) {
 
 // Allow request if error returns nil.
 func (b *Breaker) Allow() error {
-	success, total := b.summary()
-	k := b.k * float64(success)
-
+	// The number of requests accepted by the backend
+	accepts, total := b.summary()
+	// The number of requests attempted by the application layer(at the client, on top of the adaptive throttling system)
+	requests := b.k * float64(accepts)
 	// check overflow requests = K * success
-	if total < b.request || float64(total) < k {
+	if total < b.request || float64(total) < requests {
 		if atomic.LoadInt32(&b.state) == StateOpen {
 			atomic.CompareAndSwapInt32(&b.state, StateOpen, StateClosed)
 		}
@@ -136,9 +137,8 @@ func (b *Breaker) Allow() error {
 	if atomic.LoadInt32(&b.state) == StateClosed {
 		atomic.CompareAndSwapInt32(&b.state, StateClosed, StateOpen)
 	}
-	dr := math.Max(0, (float64(total)-k)/float64(total+1))
+	dr := math.Max(0, (float64(total)-requests)/float64(total+1))
 	drop := b.trueOnProba(dr)
-
 	if drop {
 		return circuitbreaker.ErrNotAllowed
 	}
