@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	gCPU  int64
-	decay = 0.95
+	gCPU    int64
+	decay   = 0.95
+	ifDecay = 0.0 // maxInFlight decay
 
 	_ ratelimit.Limiter = &BBR{}
 )
@@ -54,7 +55,6 @@ type Stat struct {
 	InFlight    int64
 	MaxInFlight int64
 	MinRt       int64
-	MaxPass     int64
 }
 
 // counterCache is used to cache maxPASS and minRt result.
@@ -101,16 +101,15 @@ func WithCPUThreshold(threshold int64) Option {
 // https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
 type BBR struct {
 	cpu             cpuGetter
-	passStat        window.RollingCounter
 	rtStat          window.RollingCounter
 	inFlight        int64
 	bucketPerSecond int64
 	bucketDuration  time.Duration
 
 	// prevDropTime defines previous start drop since initTime
-	prevDropTime atomic.Value
-	maxPASSCache atomic.Value
-	minRtCache   atomic.Value
+	prevDropTime     atomic.Value
+	minRtCache       atomic.Value
+	maxInFlightCache atomic.Value
 
 	opts options
 }
@@ -127,48 +126,16 @@ func NewLimiter(opts ...Option) *BBR {
 	}
 
 	bucketDuration := opt.Window / time.Duration(opt.Bucket)
-	passStat := window.NewRollingCounter(window.RollingCounterOpts{Size: opt.Bucket, BucketDuration: bucketDuration})
 	rtStat := window.NewRollingCounter(window.RollingCounterOpts{Size: opt.Bucket, BucketDuration: bucketDuration})
 
 	limiter := &BBR{
 		opts:            opt,
-		passStat:        passStat,
 		rtStat:          rtStat,
 		bucketDuration:  bucketDuration,
 		bucketPerSecond: int64(time.Second / bucketDuration),
 		cpu:             func() int64 { return atomic.LoadInt64(&gCPU) },
 	}
 	return limiter
-}
-
-func (l *BBR) maxPASS() int64 {
-	passCache := l.maxPASSCache.Load()
-	if passCache != nil {
-		ps := passCache.(*counterCache)
-		if l.timespan(ps.time) < 1 {
-			return ps.val
-		}
-	}
-	rawMaxPass := int64(l.passStat.Reduce(func(iterator window.Iterator) float64 {
-		var result = 1.0
-		for i := 1; iterator.Next() && i < l.opts.Bucket; i++ {
-			bucket := iterator.Bucket()
-			count := 0.0
-			for _, p := range bucket.Points {
-				count += p
-			}
-			result = math.Max(result, count)
-		}
-		return result
-	}))
-	if rawMaxPass == 0 {
-		rawMaxPass = 1
-	}
-	l.maxPASSCache.Store(&counterCache{
-		val:  rawMaxPass,
-		time: time.Now(),
-	})
-	return rawMaxPass
 }
 
 // timespan returns the passed bucket count
@@ -217,7 +184,43 @@ func (l *BBR) minRT() int64 {
 }
 
 func (l *BBR) maxInFlight() int64 {
-	return int64(math.Floor(float64(l.maxPASS()*l.minRT()*l.bucketPerSecond)/1000.0) + 0.5)
+	var (
+		prev    int64
+		ifCache = l.maxInFlightCache.Load()
+	)
+	if ifCache != nil {
+		cc := ifCache.(*counterCache)
+		prev = cc.val
+		if l.timespan(cc.time) < 1 {
+			return prev
+		}
+	}
+	cur := int64(math.Ceil(l.rtStat.Reduce(func(iterator window.Iterator) float64 {
+		var rtTotal float64
+		for i := 1; iterator.Next() && i < l.opts.Bucket; i++ {
+			bucket := iterator.Bucket()
+			if len(bucket.Points) == 0 {
+				continue
+			}
+			for _, p := range bucket.Points {
+				rtTotal += p
+			}
+		}
+		// concurrency = rt * qps
+		return (rtTotal / 1000.0) * (float64(time.Second) / float64(l.opts.Window))
+	})))
+	if cur <= 0 {
+		cur = 1
+	}
+	maxInFlight := cur
+	if prev > 0 {
+		maxInFlight = int64(float64(prev)*ifDecay + float64(cur)*(1.0-ifDecay))
+	}
+	l.maxInFlightCache.Store(&counterCache{
+		val:  maxInFlight,
+		time: time.Now(),
+	})
+	return maxInFlight
 }
 
 func (l *BBR) shouldDrop() bool {
@@ -259,7 +262,6 @@ func (l *BBR) Stat() Stat {
 	return Stat{
 		CPU:         l.cpu(),
 		MinRt:       l.minRT(),
-		MaxPass:     l.maxPASS(),
 		MaxInFlight: l.maxInFlight(),
 		InFlight:    atomic.LoadInt64(&l.inFlight),
 	}
@@ -277,6 +279,5 @@ func (l *BBR) Allow() (ratelimit.DoneFunc, error) {
 		rt := (time.Now().UnixNano() - start) / int64(time.Millisecond)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
-		l.passStat.Add(1)
 	}, nil
 }
