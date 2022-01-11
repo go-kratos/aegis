@@ -161,9 +161,6 @@ func (l *BBR) maxPASS() int64 {
 		}
 		return result
 	}))
-	if rawMaxPass == 0 {
-		rawMaxPass = 1
-	}
 	l.maxPASSCache.Store(&counterCache{
 		val:  rawMaxPass,
 		time: time.Now(),
