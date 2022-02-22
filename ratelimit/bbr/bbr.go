@@ -2,6 +2,7 @@ package bbr
 
 import (
 	"math"
+	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -73,6 +74,8 @@ type options struct {
 	Bucket int
 	// CPUThreshold
 	CPUThreshold int64
+	// CPUQuota
+	CPUQuota float64
 }
 
 // WithWindow with window size.
@@ -93,6 +96,13 @@ func WithBucket(b int) Option {
 func WithCPUThreshold(threshold int64) Option {
 	return func(o *options) {
 		o.CPUThreshold = threshold
+	}
+}
+
+// WithCPUQuota with real cpu quota(if it can not collect from process correct);
+func WithCPUQuota(quota float64) Option {
+	return func(o *options) {
+		o.CPUQuota = quota
 	}
 }
 
@@ -138,6 +148,14 @@ func NewLimiter(opts ...Option) *BBR {
 		bucketPerSecond: int64(time.Second / bucketDuration),
 		cpu:             func() int64 { return atomic.LoadInt64(&gCPU) },
 	}
+
+	if opt.CPUQuota != 0 {
+		// if cpuQuota is set, use new cpuGetter,Calculate the real CPU value based on the number of CPUs and Quota.
+		limiter.cpu = func() int64 {
+			return int64(float64(atomic.LoadInt64(&gCPU)) * float64(runtime.NumCPU()) / opt.CPUQuota)
+		}
+	}
+
 	return limiter
 }
 
