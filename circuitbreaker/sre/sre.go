@@ -129,14 +129,10 @@ func (b *Breaker) Allow() error {
 	requests := b.k * float64(accepts)
 	// check overflow requests = K * accepts
 	if total < b.request || float64(total) < requests {
-		if atomic.LoadInt32(&b.state) == StateOpen {
-			atomic.CompareAndSwapInt32(&b.state, StateOpen, StateClosed)
-		}
+		atomic.CompareAndSwapInt32(&b.state, StateOpen, StateClosed)
 		return nil
 	}
-	if atomic.LoadInt32(&b.state) == StateClosed {
-		atomic.CompareAndSwapInt32(&b.state, StateClosed, StateOpen)
-	}
+	atomic.CompareAndSwapInt32(&b.state, StateClosed, StateOpen)
 	dr := math.Max(0, (float64(total)-requests)/float64(total+1))
 	drop := b.trueOnProba(dr)
 	if drop {
