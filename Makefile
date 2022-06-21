@@ -5,7 +5,7 @@ PKG_DIR?=''
 
 LINTER := bin/golangci-lint
 $(LINTER): 
-	curl -L https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.42.0
+	curl -SL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s latest
 
 .PHONY: test
 test:
