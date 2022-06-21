@@ -27,6 +27,14 @@ jobs:
         with:
           go-version: 1.17
 
+      - uses: actions/checkout@v3
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: ${{ matrix.workdir }}
+          skip-pkg-cache: true
+
       - name: Get Dependencies
         run: make deps PKG_DIR=${{ matrix.case.dir }}
 
