@@ -298,6 +298,7 @@ func (l *BBR) Allow() (ratelimit.DoneFunc, error) {
 	start := time.Now().UnixNano()
 	ms := float64(time.Millisecond)
 	return func(ratelimit.DoneInfo) {
+		//lint:ignore
 		rt := int64(math.Ceil(float64(time.Now().UnixNano()-start)) / ms)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
