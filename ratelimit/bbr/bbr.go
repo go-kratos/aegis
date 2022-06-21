@@ -43,10 +43,18 @@ func cpuproc() {
 	for range ticker.C {
 		stat := &cpu.Stat{}
 		cpu.ReadStat(stat)
+		stat.Usage = min(stat.Usage, 1000)
 		prevCPU := atomic.LoadInt64(&gCPU)
 		curCPU := int64(float64(prevCPU)*decay + float64(stat.Usage)*(1.0-decay))
 		atomic.StoreInt64(&gCPU, curCPU)
 	}
+}
+
+func min(l, r uint64) uint64 {
+	if l < r {
+		return l
+	}
+	return r
 }
 
 // Stat contains the metrics snapshot of bbr.
@@ -288,8 +296,9 @@ func (l *BBR) Allow() (ratelimit.DoneFunc, error) {
 	}
 	atomic.AddInt64(&l.inFlight, 1)
 	start := time.Now().UnixNano()
+	ms := float64(time.Millisecond)
 	return func(ratelimit.DoneInfo) {
-		rt := (time.Now().UnixNano() - start) / int64(time.Millisecond)
+		rt := int64(math.Ceil(float64(time.Now().UnixNano()-start)) / ms)
 		l.rtStat.Add(rt)
 		atomic.AddInt64(&l.inFlight, -1)
 		l.passStat.Add(1)
