@@ -81,7 +81,7 @@ func (c *cgroup) CPUSetCPUs() ([]uint64, error) {
 	return sets, nil
 }
 
-// CurrentcGroup get current process cgroup
+// currentcGroup get current process cgroup
 func currentcGroup() (*cgroup, error) {
 	pid := os.Getpid()
 	cgroupFile := fmt.Sprintf("/proc/%d/cgroup", pid)

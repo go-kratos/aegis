@@ -15,7 +15,7 @@ var (
 	gCPU  int64
 	decay = 0.95
 
-	_ ratelimit.Limiter = &BBR{}
+	_ ratelimit.Limiter = (*BBR)(nil)
 )
 
 type (
