@@ -2,7 +2,9 @@ package topk
 
 import "github.com/go-kratos/aegis/pkg/minheap"
 
-type Item = minheap.Node
+type Item struct {
+	minheap.Node
+}
 
 // Topk algorithm interface
 type Topk interface {

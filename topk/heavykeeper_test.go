@@ -22,13 +22,13 @@ func TestTopkList(t *testing.T) {
 	}
 	var rate float64
 	for _, node := range topk.List() {
-		rate += math.Abs(float64(node.Count)-float64(dataMap[node.Item])) / float64(dataMap[node.Item])
-		t.Logf("item %s, count %d, expect %d", node.Item, node.Count, dataMap[node.Item])
+		rate += math.Abs(float64(node.Count)-float64(dataMap[node.Key])) / float64(dataMap[node.Key])
+		t.Logf("item %s, count %d, expect %d", node.Key, node.Count, dataMap[node.Key])
 	}
 	t.Logf("err rate avg:%f", rate)
 	for i, node := range topk.List() {
-		assert.Equal(t, strconv.FormatInt(int64(i), 10), node.Item)
-		t.Logf("%s: %d", node.Item, node.Count)
+		assert.Equal(t, strconv.FormatInt(int64(i), 10), node.Key)
+		t.Logf("%s: %d", node.Key, node.Count)
 	}
 }
 

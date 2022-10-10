@@ -22,7 +22,7 @@ func (h *Heap) Add(val Node) string {
 	} else if val.Count > h.Nodes[0].Count {
 		expelled := heap.Pop(&h.Nodes)
 		heap.Push(&h.Nodes, val)
-		return expelled.(Node).Item
+		return expelled.(Node).Key
 	}
 	return ""
 }
@@ -44,9 +44,9 @@ func (h *Heap) Min() uint32 {
 	return h.Nodes[0].Count
 }
 
-func (h *Heap) Find(item string) (int, bool) {
+func (h *Heap) Find(key string) (int, bool) {
 	for i := range h.Nodes {
-		if h.Nodes[i].Item == item {
+		if h.Nodes[i].Key == key {
 			return i, true
 		}
 	}
@@ -62,7 +62,7 @@ func (h *Heap) Sorted() Nodes {
 type Nodes []Node
 
 type Node struct {
-	Item  string
+	Key  string
 	Count uint32
 }
 
@@ -71,7 +71,7 @@ func (n Nodes) Len() int {
 }
 
 func (n Nodes) Less(i, j int) bool {
-	return (n[i].Count < n[j].Count) || (n[i].Count == n[j].Count && n[i].Item > n[j].Item)
+	return (n[i].Count < n[j].Count) || (n[i].Count == n[j].Count && n[i].Key > n[j].Key)
 }
 
 func (n Nodes) Swap(i, j int) {

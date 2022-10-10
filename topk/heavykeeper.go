@@ -57,7 +57,12 @@ func (topk *HeavyKeeper) Expelled() <-chan string {
 }
 
 func (topk *HeavyKeeper) List() []Item {
-	return topk.minHeap.Sorted()
+	items := topk.minHeap.Sorted()
+	res := make([]Item, 0, len(items))
+	for _, item := range items {
+		res = append(res, Item{item})
+	}
+	return res
 }
 
 func (topk *HeavyKeeper) expell(item string) {
@@ -123,7 +128,7 @@ func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
 		topk.minHeap.Fix(itemHeapIdx, maxCount)
 		return true
 	}
-	expelled := topk.minHeap.Add(minheap.Node{Item: item, Count: maxCount})
+	expelled := topk.minHeap.Add(minheap.Node{Key: item, Count: maxCount})
 	topk.expell(expelled)
 	return true
 }
