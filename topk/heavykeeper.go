@@ -123,9 +123,16 @@ func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
 	}
 	expelled := topk.minHeap.Add(&minheap.Node{Key: item, Count: maxCount})
 	if expelled != nil {
-		topk.expelled <- Item{Key: expelled.Key, Count: expelled.Count}
+		topk.expell(Item{Key: expelled.Key, Count: expelled.Count})
 	}
 	return true
+}
+
+func (topk *HeavyKeeper) expell(item Item) {
+	select {
+	case topk.expelled <- item:
+	default:
+	}
 }
 
 type bucket struct {
