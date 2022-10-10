@@ -20,13 +20,13 @@ const (
 	// then state reset to closed, if not continue the step.
 	StateOpen int32 = iota
 	// StateClosed when circuit breaker closed, request allowed, the breaker
-	// calc the succeed ratio, if request num greater request setting and
+	// calc to succeed ratio, if request num greater request setting and
 	// ratio lower than the setting ratio, then reset state to open.
 	StateClosed
 )
 
 var (
-	_ circuitbreaker.CircuitBreaker = &Breaker{}
+	_ circuitbreaker.CircuitBreaker = (*Breaker)(nil)
 )
 
 // options is a breaker options.
@@ -82,7 +82,7 @@ type Breaker struct {
 	state int32
 }
 
-// NewBreaker return a sreBresker with options
+// NewBreaker return a sreBreaker with options
 func NewBreaker(opts ...Option) circuitbreaker.CircuitBreaker {
 	opt := options{
 		success: 0.6,
@@ -141,14 +141,14 @@ func (b *Breaker) Allow() error {
 	return nil
 }
 
-// MarkSuccess mark requeest is success.
+// MarkSuccess mark request is success.
 func (b *Breaker) MarkSuccess() {
 	b.stat.Add(1)
 }
 
 // MarkFailed mark request is failed.
 func (b *Breaker) MarkFailed() {
-	// NOTE: when client reject requets locally, continue add counter let the
+	// NOTE: when client reject request locally, continue to add counter let the
 	// drop ratio higher.
 	b.stat.Add(0)
 }

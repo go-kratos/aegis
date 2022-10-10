@@ -10,6 +10,8 @@ import (
 	pscpu "github.com/shirou/gopsutil/v3/cpu"
 )
 
+var _ CPU = (*cgroupCPU)(nil)
+
 type cgroupCPU struct {
 	frequency uint64
 	quota     float64
@@ -226,7 +228,7 @@ func cpuMaxFreq() uint64 {
 	return feq
 }
 
-//GetClockTicks get the OS's ticks per second
+// getClockTicks get the OS's ticks per second
 func getClockTicks() int {
 	// TODO figure out a better alternative for platforms where we're missing cgo
 	//

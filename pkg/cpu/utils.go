@@ -84,17 +84,18 @@ func ParseUintList(val string) (map[int]bool, error) {
 	return availableInts, nil
 }
 
-// ReadLines reads contents from a file and splits them by new lines.
+// readLines reads contents from a file and splits them by new lines.
 // A convenience wrapper to ReadLinesOffsetN(filename, 0, -1).
 func readLines(filename string) ([]string, error) {
 	return readLinesOffsetN(filename, 0, -1)
 }
 
-// ReadLinesOffsetN reads contents from file and splits them by new line.
+// readLinesOffsetN reads contents from file and splits them by new line.
 // The offset tells at which line number to start.
 // The count determines the number of lines to read (starting from offset):
-//   n >= 0: at most n lines
-//   n < 0: whole file
+//
+//	n >= 0: at most n lines
+//	n < 0: whole file
 func readLinesOffsetN(filename string, offset uint, n int) ([]string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
