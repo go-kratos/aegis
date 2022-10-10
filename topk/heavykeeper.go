@@ -70,7 +70,7 @@ func (topk *HeavyKeeper) expell(item string) {
 // Add add item into heavykeeper and return if item had beend add into minheap.
 // if item had been add into minheap and some item was expelled, return the expelled item.
 func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
-	bs := StringToBytes(item)
+	bs := stringToBytes(item)
 	itemFingerprint := murmur3.Sum32(bs)
 	var maxCount uint32
 
@@ -154,7 +154,7 @@ func max(x, y uint32) uint32 {
 	return y
 }
 
-func StringToBytes(s string) []byte {
+func stringToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(
 		&struct {
 			string
