@@ -1,12 +1,12 @@
 package topk
 
-import "github.com/go-kratos/aegis/pkg/minheap"
-
+// Item is topk item.
 type Item struct {
-	minheap.Node
+	Key   string
+	Count uint32
 }
 
-// Topk algorithm interface
+// Topk algorithm interface.
 type Topk interface {
 	// Add item and return if item is in the topk.
 	Add(item string, incr uint32) bool

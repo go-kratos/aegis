@@ -60,7 +60,7 @@ func (topk *HeavyKeeper) List() []Item {
 	items := topk.minHeap.Sorted()
 	res := make([]Item, 0, len(items))
 	for _, item := range items {
-		res = append(res, Item{item})
+		res = append(res, Item{Key: item.Key, Count: item.Count})
 	}
 	return res
 }
