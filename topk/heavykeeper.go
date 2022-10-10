@@ -6,7 +6,6 @@ package topk
 import (
 	"math"
 	"math/rand"
-	"unsafe"
 
 	"github.com/go-kratos/aegis/pkg/minheap"
 
@@ -67,16 +66,15 @@ func (topk *HeavyKeeper) List() []Item {
 
 // Add add item into heavykeeper and return if item had beend add into minheap.
 // if item had been add into minheap and some item was expelled, return the expelled item.
-func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
-	bs := stringToBytes(item)
-	itemFingerprint := murmur3.Sum32(bs)
+func (topk *HeavyKeeper) Add(key string, incr uint32) bool {
+	keyBytes := []byte(key)
+	itemFingerprint := murmur3.Sum32(keyBytes)
 	var maxCount uint32
 
 	// compute d hashes
 	for i, row := range topk.buckets {
 
-		bucketNumber := murmur3.Sum32WithSeed(bs, uint32(i)) % uint32(topk.width)
-
+		bucketNumber := murmur3.Sum32WithSeed(keyBytes, uint32(i)) % uint32(topk.width)
 		fingerprint := row[bucketNumber].fingerprint
 		count := row[bucketNumber].count
 
@@ -116,12 +114,12 @@ func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
 		return false
 	}
 	// update minheap
-	itemHeapIdx, itemHeapExist := topk.minHeap.Find(item)
+	itemHeapIdx, itemHeapExist := topk.minHeap.Find(key)
 	if itemHeapExist {
 		topk.minHeap.Fix(itemHeapIdx, maxCount)
 		return true
 	}
-	expelled := topk.minHeap.Add(&minheap.Node{Key: item, Count: maxCount})
+	expelled := topk.minHeap.Add(&minheap.Node{Key: key, Count: maxCount})
 	if expelled != nil {
 		topk.expell(Item{Key: expelled.Key, Count: expelled.Count})
 	}
@@ -159,13 +157,4 @@ func max(x, y uint32) uint32 {
 		return x
 	}
 	return y
-}
-
-func stringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(
-		&struct {
-			string
-			Cap int
-		}{s, len(s)},
-	))
 }
