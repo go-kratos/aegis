@@ -16,20 +16,21 @@ func NewHeap(k uint32) *Heap {
 	return &Heap{Nodes: h, K: k}
 }
 
-func (h *Heap) Add(val Node) string {
+func (h *Heap) Add(val *Node) *Node {
 	if h.K > uint32(len(h.Nodes)) {
 		heap.Push(&h.Nodes, val)
 	} else if val.Count > h.Nodes[0].Count {
 		expelled := heap.Pop(&h.Nodes)
 		heap.Push(&h.Nodes, val)
-		return expelled.(Node).Key
+		node := expelled.(*Node)
+		return node
 	}
-	return ""
+	return nil
 }
 
-func (h *Heap) Pop() Node {
+func (h *Heap) Pop() *Node {
 	expelled := heap.Pop(&h.Nodes)
-	return expelled.(Node)
+	return expelled.(*Node)
 }
 
 func (h *Heap) Fix(idx int, count uint32) {
@@ -54,15 +55,15 @@ func (h *Heap) Find(key string) (int, bool) {
 }
 
 func (h *Heap) Sorted() Nodes {
-	nodes := append([]Node(nil), h.Nodes...)
+	nodes := append([]*Node(nil), h.Nodes...)
 	sort.Sort(sort.Reverse(Nodes(nodes)))
 	return nodes
 }
 
-type Nodes []Node
+type Nodes []*Node
 
 type Node struct {
-	Key  string
+	Key   string
 	Count uint32
 }
 
@@ -79,11 +80,11 @@ func (n Nodes) Swap(i, j int) {
 }
 
 func (n *Nodes) Push(val interface{}) {
-	*n = append(*n, val.(Node))
+	*n = append(*n, val.(*Node))
 }
 
 func (n *Nodes) Pop() interface{} {
-	var val Node
+	var val *Node
 	val, *n = (*n)[len((*n))-1], (*n)[:len((*n))-1]
 	return val
 }

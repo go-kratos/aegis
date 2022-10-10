@@ -13,5 +13,5 @@ type Topk interface {
 	// List all topk items.
 	List() []Item
 	// Expelled watch at the expelled items.
-	Expelled() <-chan string
+	Expelled() <-chan Item
 }

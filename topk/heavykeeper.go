@@ -26,7 +26,7 @@ type HeavyKeeper struct {
 	r        *rand.Rand
 	buckets  [][]bucket
 	minHeap  *minheap.Heap
-	expelled chan string
+	expelled chan Item
 }
 
 func NewHeavyKeeper(k, width, depth uint32, decay float64) Topk {
@@ -44,7 +44,7 @@ func NewHeavyKeeper(k, width, depth uint32, decay float64) Topk {
 		buckets:     arrays,
 		r:           rand.New(rand.NewSource(0)),
 		minHeap:     minheap.NewHeap(k),
-		expelled:    make(chan string, 32),
+		expelled:    make(chan Item, 32),
 	}
 	for i := 0; i < LOOKUP_TABLE; i++ {
 		topk.lookupTable[i] = math.Pow(decay, float64(i))
@@ -52,7 +52,7 @@ func NewHeavyKeeper(k, width, depth uint32, decay float64) Topk {
 	return topk
 }
 
-func (topk *HeavyKeeper) Expelled() <-chan string {
+func (topk *HeavyKeeper) Expelled() <-chan Item {
 	return topk.expelled
 }
 
@@ -63,13 +63,6 @@ func (topk *HeavyKeeper) List() []Item {
 		res = append(res, Item{Key: item.Key, Count: item.Count})
 	}
 	return res
-}
-
-func (topk *HeavyKeeper) expell(item string) {
-	select {
-	case topk.expelled <- item:
-	default:
-	}
 }
 
 // Add add item into heavykeeper and return if item had beend add into minheap.
@@ -128,8 +121,10 @@ func (topk *HeavyKeeper) Add(item string, incr uint32) bool {
 		topk.minHeap.Fix(itemHeapIdx, maxCount)
 		return true
 	}
-	expelled := topk.minHeap.Add(minheap.Node{Key: item, Count: maxCount})
-	topk.expell(expelled)
+	expelled := topk.minHeap.Add(&minheap.Node{Key: item, Count: maxCount})
+	if expelled != nil {
+		topk.expelled <- Item{Key: expelled.Key, Count: expelled.Count}
+	}
 	return true
 }
 
