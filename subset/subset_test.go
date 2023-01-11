@@ -6,17 +6,22 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/go-kratos/aegis/consistent"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"stathat.com/c/consistent"
 )
 
+type member string
+
+func (m member) String() string {
+	return string(m)
+}
 func TestRedundant(t *testing.T) {
-	assert.Equal(t, []string{"2", "3"}, Subset("1", []string{"2", "2", "2", "3"}, 3))
+	assert.Equal(t, []member{"2", "3"}, Subset("1", []member{"2", "2", "2", "3"}, 3))
 }
 
 func TestDistribution(t *testing.T) {
-	var backends []string
+	var backends []member
 	content, err := ioutil.ReadFile("./backends.json")
 	if err != nil {
 		panic(err)
@@ -25,15 +30,14 @@ func TestDistribution(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	res := make(map[string]int64, 0)
+	res := make(map[member]int64, 0)
 
-	c := consistent.New()
+	c := consistent.New[member]()
 	c.NumberOfReplicas = 160
 	c.UseFnv = true
 	var max int64
-	for _, ins := range backends {
-		c.Add(ins)
-	}
+	c.Set(backends)
+
 	for i := 0; i < 8000; i++ {
 		id := uuid.New()
 		backs := subset(c, id.String()[:12], backends, 25)
@@ -50,8 +54,8 @@ func TestDistribution(t *testing.T) {
 }
 
 func TestRelocation(t *testing.T) {
-	var backends []string
-	conns := make(map[string]map[string]struct{})
+	var backends []member
+	conns := make(map[string]map[member]struct{})
 
 	content, err := ioutil.ReadFile("./backends.json")
 	if err != nil {
@@ -62,12 +66,11 @@ func TestRelocation(t *testing.T) {
 		panic(err)
 	}
 
-	c := consistent.New()
+	c := consistent.New[member]()
 	c.NumberOfReplicas = 160
 	c.UseFnv = true
-	for _, ins := range backends {
-		c.Add(ins)
-	}
+	c.Set(backends)
+
 	var clients []string
 	for i := 0; i < 8000; i++ {
 		id := uuid.New().String()[:12]
@@ -75,7 +78,7 @@ func TestRelocation(t *testing.T) {
 	}
 	for _, client := range clients {
 		backs := subset(c, client, backends, 25)
-		conn := map[string]struct{}{}
+		conn := map[member]struct{}{}
 		for _, back := range backs {
 			conn[back] = struct{}{}
 		}
@@ -86,7 +89,7 @@ func TestRelocation(t *testing.T) {
 	c.Remove(re)
 	for _, client := range clients {
 		backs := subset(c, client, backends, 25)
-		conn := map[string]struct{}{}
+		conn := map[member]struct{}{}
 		for _, back := range backs {
 			conn[back] = struct{}{}
 		}
