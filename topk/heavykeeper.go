@@ -74,7 +74,7 @@ func (topk *HeavyKeeper) Add(key string, incr uint32) bool {
 	// compute d hashes
 	for i, row := range topk.buckets {
 
-		bucketNumber := murmur3.Sum32WithSeed(keyBytes, uint32(i)) % uint32(topk.width)
+		bucketNumber := murmur3.SeedSum32(uint32(i), keyBytes) % uint32(topk.width)
 		fingerprint := row[bucketNumber].fingerprint
 		count := row[bucketNumber].count
 
