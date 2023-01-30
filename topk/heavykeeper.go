@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-kratos/aegis/pkg/minheap"
 
-	"github.com/spaolacci/murmur3"
+	"github.com/twmb/murmur3"
 )
 
 const LOOKUP_TABLE = 256

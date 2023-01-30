@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/shirou/gopsutil/v3 v3.21.8
-	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.7.0
+	github.com/twmb/murmur3 v1.1.6
 )
 
 require (
