@@ -13,7 +13,7 @@ import (
 func TestTopkList(t *testing.T) {
 	// zipfan distribution
 	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 3, 2, 1000)
-	topk := NewHeavyKeeper(10, 10000, 5, 0.925)
+	topk := NewHeavyKeeper(10, 10000, 5, 0.925, 0)
 	dataMap := make(map[string]int)
 	for i := 0; i < 10000; i++ {
 		key := strconv.FormatUint(zipf.Uint64(), 10)
@@ -38,7 +38,7 @@ func BenchmarkAdd(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		data[i] = strconv.FormatUint(zipf.Uint64(), 10)
 	}
-	topk := NewHeavyKeeper(10, 1000, 5, 0.9)
+	topk := NewHeavyKeeper(10, 1000, 5, 0.9, 0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		topk.Add(data[i%1000], 1)
