@@ -21,14 +21,16 @@ type HeavyKeeper struct {
 	depth       uint32
 	decay       float64
 	lookupTable []float64
+	minCount    uint32
 
 	r        *rand.Rand
 	buckets  [][]bucket
 	minHeap  *minheap.Heap
 	expelled chan Item
+	total    uint64
 }
 
-func NewHeavyKeeper(k, width, depth uint32, decay float64) Topk {
+func NewHeavyKeeper(k, width, depth uint32, decay float64, min uint32) Topk {
 	arrays := make([][]bucket, depth)
 	for i := range arrays {
 		arrays[i] = make([]bucket, width)
@@ -44,6 +46,7 @@ func NewHeavyKeeper(k, width, depth uint32, decay float64) Topk {
 		r:           rand.New(rand.NewSource(0)),
 		minHeap:     minheap.NewHeap(k),
 		expelled:    make(chan Item, 32),
+		minCount:    min,
 	}
 	for i := 0; i < LOOKUP_TABLE; i++ {
 		topk.lookupTable[i] = math.Pow(decay, float64(i))
@@ -66,7 +69,7 @@ func (topk *HeavyKeeper) List() []Item {
 
 // Add add item into heavykeeper and return if item had beend add into minheap.
 // if item had been add into minheap and some item was expelled, return the expelled item.
-func (topk *HeavyKeeper) Add(key string, incr uint32) bool {
+func (topk *HeavyKeeper) Add(key string, incr uint32) (string, bool) {
 	keyBytes := []byte(key)
 	itemFingerprint := murmur3.Sum32(keyBytes)
 	var maxCount uint32
@@ -109,21 +112,28 @@ func (topk *HeavyKeeper) Add(key string, incr uint32) bool {
 			}
 		}
 	}
+	topk.total += uint64(incr)
+	if maxCount < topk.minCount {
+		return "", false
+	}
 	minHeap := topk.minHeap.Min()
 	if len(topk.minHeap.Nodes) == int(topk.k) && maxCount < minHeap {
-		return false
+		return "", false
 	}
 	// update minheap
 	itemHeapIdx, itemHeapExist := topk.minHeap.Find(key)
 	if itemHeapExist {
 		topk.minHeap.Fix(itemHeapIdx, maxCount)
-		return true
+		return "", true
 	}
+	var exp string
 	expelled := topk.minHeap.Add(&minheap.Node{Key: key, Count: maxCount})
 	if expelled != nil {
 		topk.expell(Item{Key: expelled.Key, Count: expelled.Count})
+		exp = expelled.Key
 	}
-	return true
+
+	return exp, true
 }
 
 func (topk *HeavyKeeper) expell(item Item) {
@@ -157,4 +167,20 @@ func max(x, y uint32) uint32 {
 		return x
 	}
 	return y
+}
+
+func (topk *HeavyKeeper) Fading() {
+	for _, row := range topk.buckets {
+		for i := range row {
+			row[i].count = row[i].count >> 1
+		}
+	}
+	for i := 0; i < len(topk.minHeap.Nodes); i++ {
+		topk.minHeap.Nodes[i].Count = topk.minHeap.Nodes[i].Count >> 1
+	}
+	topk.total = topk.total >> 1
+}
+
+func (topk *HeavyKeeper) Total() uint64 {
+	return topk.total
 }
