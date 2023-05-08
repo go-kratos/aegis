@@ -8,7 +8,8 @@ import (
 )
 
 func TestStat(t *testing.T) {
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 3)
+
 	var s Stat
 	var i Info
 	ReadStat(&s)

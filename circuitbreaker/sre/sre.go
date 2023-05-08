@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/aegis/circuitbreaker"
-	"github.com/go-kratos/aegis/pkg/window"
+	"github.com/go-kratos/aegis/internal/window"
 )
 
 // Option is sre breaker option function.
