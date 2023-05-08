@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-kratos/aegis/pkg/cpu"
-	"github.com/go-kratos/aegis/pkg/window"
+	"github.com/go-kratos/aegis/internal/cpu"
+	"github.com/go-kratos/aegis/internal/window"
 	"github.com/go-kratos/aegis/ratelimit"
 )
 
