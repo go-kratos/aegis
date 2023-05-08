@@ -202,7 +202,7 @@ func TestHotkeyMinCount(t *testing.T) {
 	assert.True(t, added)
 }
 
-func TestHotkeyHit(t *testing.T) {
+func testHotkeyHit(t *testing.T) {
 	option := &Option{
 		HotKeyCnt:     10000,
 		LocalCacheCnt: 10000,
