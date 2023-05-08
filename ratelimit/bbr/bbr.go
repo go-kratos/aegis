@@ -300,7 +300,7 @@ func (l *BBR) Allow() (ratelimit.DoneFunc, error) {
 	return func(ratelimit.DoneInfo) {
 		//nolint
 		end := time.Now().UnixNano()
-		if start > end {
+		if start >= end {
 			return
 		}
 		rt := int64(math.Ceil(float64(time.Now().UnixNano()-start)) / ms)
