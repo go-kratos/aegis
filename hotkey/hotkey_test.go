@@ -23,8 +23,8 @@ func benchmarkHotkey(b *testing.B, autoCache bool, writePercent float64, whileli
 	if err != nil {
 		b.Fatalf("new hot key failed,err:=%v", err)
 	}
-	random := rand.New(rand.NewSource(time.Now().Unix()))
-	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 2, 2, 1000)
+	random := rand.New(rand.NewSource(uint64(time.Now().Unix())))
+	zipf := rand.NewZipf(rand.New(rand.NewSource(uint64(time.Now().Unix()))), 2, 2, 1000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -165,7 +165,7 @@ func TestHotkeyBlacklist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new hot key failed,err:=%v", err)
 	}
-	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 2, 2, 1000)
+	zipf := rand.NewZipf(rand.New(rand.NewSource(uint64(time.Now().Unix()))), 2, 2, 1000)
 	for i := 0; i < 100000; i++ {
 		key := strconv.FormatInt(int64(zipf.Uint64()), 10)
 		h.AddWithValue(key, key, 1)
@@ -214,8 +214,8 @@ func testHotkeyHit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new hot key failed,err:=%v", err)
 	}
-	random := rand.New(rand.NewSource(time.Now().Unix()))
-	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 1.1, 2, 10000000)
+	random := rand.New(rand.NewSource(uint64(time.Now().Unix())))
+	zipf := rand.NewZipf(rand.New(rand.NewSource(uint64(time.Now().Unix()))), 1.1, 2, 10000000)
 	var total int
 	var hit int
 	for {
