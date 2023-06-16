@@ -7,7 +7,6 @@ package consistent
 import (
 	"bufio"
 	"encoding/base64"
-	"math/rand"
 	"os"
 	"runtime"
 	"sort"
@@ -16,6 +15,8 @@ import (
 	"testing"
 	"testing/quick"
 	"time"
+
+	"golang.org/x/exp/rand"
 )
 
 type member string

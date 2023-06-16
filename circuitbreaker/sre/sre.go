@@ -2,13 +2,13 @@ package sre
 
 import (
 	"math"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/go-kratos/aegis/circuitbreaker"
 	"github.com/go-kratos/aegis/internal/window"
+	"golang.org/x/exp/rand"
 )
 
 // Option is sre breaker option function.
@@ -100,7 +100,7 @@ func NewBreaker(opts ...Option) circuitbreaker.CircuitBreaker {
 	stat := window.NewRollingCounter(counterOpts)
 	return &Breaker{
 		stat:    stat,
-		r:       rand.New(rand.NewSource(time.Now().UnixNano())),
+		r:       rand.New(rand.NewSource(uint64(time.Now().UnixNano()))),
 		request: opt.request,
 		k:       1 / opt.success,
 		state:   StateClosed,

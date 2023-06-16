@@ -3,12 +3,12 @@ package subset
 import (
 	"encoding/json"
 	"io/ioutil"
-	"math/rand"
 	"testing"
 
 	"github.com/go-kratos/aegis/internal/consistent"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 type member string

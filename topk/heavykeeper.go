@@ -5,11 +5,10 @@ package topk
 
 import (
 	"math"
-	"math/rand"
 
 	"github.com/go-kratos/aegis/internal/minheap"
-
 	"github.com/twmb/murmur3"
+	"golang.org/x/exp/rand"
 )
 
 const LOOKUP_TABLE = 256

@@ -2,12 +2,12 @@ package topk
 
 import (
 	"math"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 func TestTopkList(t *testing.T) {

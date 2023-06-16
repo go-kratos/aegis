@@ -2,12 +2,12 @@ package hotkey
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 func benchmarkHotkey(b *testing.B, autoCache bool, writePercent float64, whilelist ...*CacheRuleConfig) {

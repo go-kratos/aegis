@@ -2,12 +2,12 @@ package sre
 
 import (
 	"math"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/go-kratos/aegis/internal/window"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 func getSREBreaker() *Breaker {
