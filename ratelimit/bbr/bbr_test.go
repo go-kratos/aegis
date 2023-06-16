@@ -1,7 +1,6 @@
 package bbr
 
 import (
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	"github.com/go-kratos/aegis/internal/window"
 	"github.com/go-kratos/aegis/ratelimit"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 var (

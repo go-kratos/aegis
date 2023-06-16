@@ -2,12 +2,12 @@ package sre
 
 import (
 	"math"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/go-kratos/aegis/internal/window"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 func getSREBreaker() *Breaker {
@@ -18,7 +18,7 @@ func getSREBreaker() *Breaker {
 	stat := window.NewRollingCounter(counterOpts)
 	return &Breaker{
 		stat: stat,
-		r:    rand.New(rand.NewSource(time.Now().UnixNano())),
+		r:    rand.New(rand.NewSource(uint64(time.Now().UnixNano()))),
 
 		request: 100,
 		k:       2,

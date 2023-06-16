@@ -2,17 +2,17 @@ package topk
 
 import (
 	"math"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/rand"
 )
 
 func TestTopkList(t *testing.T) {
 	// zipfan distribution
-	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 3, 2, 1000)
+	zipf := rand.NewZipf(rand.New(rand.NewSource(uint64(time.Now().Unix()))), 3, 2, 1000)
 	topk := NewHeavyKeeper(10, 10000, 5, 0.925, 0)
 	dataMap := make(map[string]int)
 	for i := 0; i < 10000; i++ {
@@ -33,7 +33,7 @@ func TestTopkList(t *testing.T) {
 }
 
 func BenchmarkAdd(b *testing.B) {
-	zipf := rand.NewZipf(rand.New(rand.NewSource(time.Now().Unix())), 2, 2, 1000)
+	zipf := rand.NewZipf(rand.New(rand.NewSource(uint64(time.Now().Unix()))), 2, 2, 1000)
 	var data []string = make([]string, 1000)
 	for i := 0; i < 1000; i++ {
 		data[i] = strconv.FormatUint(zipf.Uint64(), 10)

@@ -8,6 +8,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.2
 	github.com/stretchr/testify v1.8.2
 	github.com/twmb/murmur3 v1.1.6
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 )
 
 require (
