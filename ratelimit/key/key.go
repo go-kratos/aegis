@@ -31,7 +31,7 @@ func (l *Limiter) GetLimiter(key string) *rate.Limiter {
 	limiter, ok := l.requests.Load(key)
 	if !ok {
 		limiter, ok = l.requests.LoadOrStore(key, &keyLimiter{
-			Limiter: rate.NewLimiter(rate.Every(l.interval), 1),
+			Limiter: rate.NewLimiter(rate.Every(l.interval), l.burst),
 		})
 	}
 	limiter.lastAccess = time.Now()
