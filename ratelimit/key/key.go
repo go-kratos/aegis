@@ -1,7 +1,6 @@
 package key
 
 import (
-	"sync"
 	"time"
 
 	"github.com/go-kratos/aegis/internal/syncmap"
@@ -20,7 +19,6 @@ func WithExpires(d time.Duration) Option {
 
 // Limiter is a rate limiter that allows a certain number of requests per second.
 type Limiter struct {
-	mu       sync.Mutex
 	burst    int
 	interval time.Duration
 	expires  time.Duration
