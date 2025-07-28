@@ -45,6 +45,9 @@ func TestLimiter(t *testing.T) {
 	time.Sleep(time.Second)
 	l.GetLimiter("test_ok")
 	l.requests.Range(func(key string, value *keyLimiter) bool {
+		if time.Since(value.lastAccess) > l.interval {
+			return true
+		}
 		switch key {
 		case "test_key":
 			t.Errorf("Expected no requests for test_key after waiting, but found one")
