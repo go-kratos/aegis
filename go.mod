@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/twmb/murmur3 v1.1.6
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	golang.org/x/time v0.10.0
 )
 
 require (
