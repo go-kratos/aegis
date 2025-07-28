@@ -1,21 +1,20 @@
-package key
+package circuitbreaker
 
 import (
-	"github.com/go-kratos/aegis/circuitbreaker"
 	"github.com/go-kratos/aegis/internal/syncmap"
 )
 
 // CircuitBreakerFactory 定义一个闭包类型，用于创建 CircuitBreaker 实例
-type CircuitBreakerFactory func() circuitbreaker.CircuitBreaker
+type CircuitBreakerFactory func() CircuitBreaker
 
 // KeyCircuitBreaker is a circuit breaker that manages multiple circuit breakers by key.
 type KeyCircuitBreaker struct {
-	requests  syncmap.SyncMap[string, circuitbreaker.CircuitBreaker]
+	requests  syncmap.SyncMap[string, CircuitBreaker]
 	cbFactory CircuitBreakerFactory
 }
 
-// NewKeyCircuitBreaker creates a new KeyCircuitBreaker with the given factory.
-func NewKeyCircuitBreaker(factory CircuitBreakerFactory) *KeyCircuitBreaker {
+// NewGroupCircuitBreaker creates a new KeyCircuitBreaker with the given factory.
+func NewGroupCircuitBreaker(factory CircuitBreakerFactory) *KeyCircuitBreaker {
 	kcb := &KeyCircuitBreaker{
 		cbFactory: factory,
 	}
@@ -23,7 +22,7 @@ func NewKeyCircuitBreaker(factory CircuitBreakerFactory) *KeyCircuitBreaker {
 }
 
 // GetCircuitBreaker returns a CircuitBreaker for the given key.
-func (kcb *KeyCircuitBreaker) GetCircuitBreaker(key string) circuitbreaker.CircuitBreaker {
+func (kcb *KeyCircuitBreaker) GetCircuitBreaker(key string) CircuitBreaker {
 	cb, ok := kcb.requests.Load(key)
 	if !ok {
 		// 使用传入的闭包创建具体的 CircuitBreaker 实例

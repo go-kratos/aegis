@@ -1,16 +1,15 @@
-package key
+package circuitbreaker_test
 
 import (
 	"testing"
 
 	"github.com/go-kratos/aegis/circuitbreaker"
 	"github.com/go-kratos/aegis/circuitbreaker/sre"
-
 	"github.com/stretchr/testify/assert"
 )
 
-func TestKeyCircuitBreaker_GetCircuitBreaker(t *testing.T) {
-	kcb := NewKeyCircuitBreaker(func() circuitbreaker.CircuitBreaker {
+func TestGroupCircuitBreaker_GetCircuitBreaker(t *testing.T) {
+	kcb := circuitbreaker.NewGroupCircuitBreaker(func() circuitbreaker.CircuitBreaker {
 		return sre.NewBreaker()
 	})
 	succ := kcb.GetCircuitBreaker("succ")
