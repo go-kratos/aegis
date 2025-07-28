@@ -8,19 +8,34 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// Option is a function that configures the Limiter.
+type Option func(*Limiter)
+
+// WithExpires sets the expiration duration for the limiter.
+func WithExpires(d time.Duration) Option {
+	return func(l *Limiter) {
+		l.expires = d
+	}
+}
+
 // Limiter is a rate limiter that allows a certain number of requests per second.
 type Limiter struct {
 	mu       sync.Mutex
 	burst    int
 	interval time.Duration
+	expires  time.Duration
 	requests syncmap.SyncMap[string, *keyLimiter]
 }
 
 // NewLimiter creates a new RateLimiter with the given interval and burst size.
-func NewLimiter(interval time.Duration, burst int) *Limiter {
+func NewLimiter(interval time.Duration, burst int, opts ...Option) *Limiter {
 	l := &Limiter{
 		burst:    burst,
 		interval: interval,
+		expires:  time.Minute,
+	}
+	for _, o := range opts {
+		o(l)
 	}
 	go l.cleanupExpired()
 	return l
