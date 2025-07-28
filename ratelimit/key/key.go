@@ -54,7 +54,7 @@ func (l *Limiter) GetLimiter(key string) *rate.Limiter {
 }
 
 func (l *Limiter) cleanupExpired() {
-	ticker := time.NewTicker(l.interval)
+	ticker := time.NewTicker(l.expires)
 	defer ticker.Stop()
 	for range ticker.C {
 		l.requests.Range(func(key string, value *keyLimiter) bool {
