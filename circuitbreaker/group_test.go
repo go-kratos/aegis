@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGroupCircuitBreaker_GetCircuitBreaker(t *testing.T) {
-	kcb := circuitbreaker.NewGroupCircuitBreaker(func() circuitbreaker.CircuitBreaker {
+func TestGroup_GetCircuitBreaker(t *testing.T) {
+	g := circuitbreaker.NewGroup(func() circuitbreaker.CircuitBreaker {
 		return sre.NewBreaker()
 	})
-	succ := kcb.GetCircuitBreaker("succ")
+	succ := g.GetCircuitBreaker("succ")
 	assert.NotNil(t, succ)
-	fail := kcb.GetCircuitBreaker("fail")
+	fail := g.GetCircuitBreaker("fail")
 	assert.NotNil(t, fail)
 	markSuccess(succ, 100)
 	markFailed(fail, 10000)
