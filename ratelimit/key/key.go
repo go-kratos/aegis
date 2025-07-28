@@ -19,18 +19,18 @@ func WithExpires(d time.Duration) Option {
 
 // Limiter is a rate limiter that allows a certain number of requests per second.
 type Limiter struct {
+	limit    rate.Limit
 	burst    int
-	interval time.Duration
 	expires  time.Duration
 	requests syncmap.SyncMap[string, *keyLimiter]
 }
 
 // NewLimiter creates a new RateLimiter with the given interval and burst size.
-func NewLimiter(interval time.Duration, burst int, opts ...Option) *Limiter {
+func NewLimiter(limit rate.Limit, burst int, opts ...Option) *Limiter {
 	l := &Limiter{
-		burst:    burst,
-		interval: interval,
-		expires:  time.Minute,
+		limit:   limit,
+		burst:   burst,
+		expires: time.Minute,
 	}
 	for _, o := range opts {
 		o(l)
@@ -44,7 +44,7 @@ func (l *Limiter) GetLimiter(key string) *rate.Limiter {
 	limiter, ok := l.requests.Load(key)
 	if !ok {
 		limiter, ok = l.requests.LoadOrStore(key, &keyLimiter{
-			Limiter: rate.NewLimiter(rate.Every(l.interval), l.burst),
+			Limiter: rate.NewLimiter(l.limit, l.burst),
 		})
 	}
 	limiter.lastAccess = time.Now()
@@ -56,7 +56,7 @@ func (l *Limiter) cleanupExpired() {
 	defer ticker.Stop()
 	for range ticker.C {
 		l.requests.Range(func(key string, value *keyLimiter) bool {
-			if time.Since(value.lastAccess) > l.interval {
+			if time.Since(value.lastAccess) > l.expires {
 				l.requests.Delete(key)
 			}
 			return true

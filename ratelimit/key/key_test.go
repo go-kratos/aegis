@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 func BenchmarkLimiter(b *testing.B) {
 	// Create a new rate limiter with a limit of 1 request per second
-	l := NewLimiter(time.Second, 1)
+	l := NewLimiter(rate.Every(time.Second), 1)
 
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("test_key_%d", i)
@@ -21,7 +23,7 @@ func BenchmarkLimiter(b *testing.B) {
 
 func TestLimiter(t *testing.T) {
 	// Create a new rate limiter with a limit of 1 request per second
-	l := NewLimiter(time.Second, 1)
+	l := NewLimiter(rate.Every(time.Second), 1)
 
 	limiter := l.GetLimiter("test_key")
 	// Test that the first request is allowed
@@ -45,7 +47,7 @@ func TestLimiter(t *testing.T) {
 	time.Sleep(time.Second)
 	l.GetLimiter("test_ok")
 	l.requests.Range(func(key string, value *keyLimiter) bool {
-		if time.Since(value.lastAccess) > l.interval {
+		if time.Since(value.lastAccess) > time.Second {
 			return true
 		}
 		switch key {
