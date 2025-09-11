@@ -29,12 +29,14 @@ type cgroup interface {
 // cgroupv1 Linux cgroup v1
 type cgroupv1 struct {
 	cgroupSet map[string]string
+	rootDir   string
+	readFile  func(string) (string, error)
 }
 
 // CPUCFSQuotaUs cpu.cfs_quota_us.
 // If no limit is set, return ErrNoCFSLimit
 func (c *cgroupv1) CPUCFSQuotaUs() (uint64, error) {
-	data, err := readFile(path.Join(c.cgroupSet["cpu"], "cpu.cfs_quota_us"))
+	data, err := c.readFile(path.Join(c.cgroupSet["cpu"], "cpu.cfs_quota_us"))
 	if err != nil {
 		return 0, err
 	}
@@ -50,7 +52,7 @@ func (c *cgroupv1) CPUCFSQuotaUs() (uint64, error) {
 
 // CPUCFSPeriodUs cpu.cfs_period_us
 func (c *cgroupv1) CPUCFSPeriodUs() (uint64, error) {
-	data, err := readFile(path.Join(c.cgroupSet["cpu"], "cpu.cfs_period_us"))
+	data, err := c.readFile(path.Join(c.cgroupSet["cpu"], "cpu.cfs_period_us"))
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +68,7 @@ func (c *cgroupv1) CPUCFSPeriodUs() (uint64, error) {
 
 // CPUAcctUsageNs cpuacct.usage
 func (c *cgroupv1) CPUAcctUsageNs() (uint64, error) {
-	data, err := readFile(path.Join(c.cgroupSet["cpuacct"], "cpuacct.usage"))
+	data, err := c.readFile(path.Join(c.cgroupSet["cpuacct"], "cpuacct.usage"))
 	if err != nil {
 		return 0, err
 	}
@@ -75,7 +77,7 @@ func (c *cgroupv1) CPUAcctUsageNs() (uint64, error) {
 
 // CPUAcctUsagePerCPU cpuacct.usage_percpu
 func (c *cgroupv1) CPUAcctUsagePerCPU() ([]uint64, error) {
-	data, err := readFile(path.Join(c.cgroupSet["cpuacct"], "cpuacct.usage_percpu"))
+	data, err := c.readFile(path.Join(c.cgroupSet["cpuacct"], "cpuacct.usage_percpu"))
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +97,7 @@ func (c *cgroupv1) CPUAcctUsagePerCPU() ([]uint64, error) {
 
 // CPUSetCPUs cpuset.cpus
 func (c *cgroupv1) CPUSetCPUs() ([]uint64, error) {
-	data, err := readFile(path.Join(c.cgroupSet["cpuset"], "cpuset.cpus"))
+	data, err := c.readFile(path.Join(c.cgroupSet["cpuset"], "cpuset.cpus"))
 	if err != nil {
 		return nil, err
 	}
@@ -133,11 +135,14 @@ func (c *cgroupv1) CPULimits() (float64, error) {
 	return float64(quota) / float64(period), nil
 }
 
-type cgroupv2 struct{}
+type cgroupv2 struct {
+	rootDir  string
+	readFile func(string) (string, error)
+}
 
 // CPUAcctUsageNs cpu.stat usage_usec * 1000
 func (c *cgroupv2) CPUAcctUsageNs() (uint64, error) {
-	data, err := readFile(path.Join(cgroupRootDir, "cpu.stat"))
+	data, err := c.readFile(path.Join(c.rootDir, "cpu.stat"))
 	if err != nil {
 		return 0, err
 	}
@@ -165,7 +170,7 @@ func (c *cgroupv2) CPUAcctUsageNs() (uint64, error) {
 
 // CPUSetCPUs cpuset.cpus.effective
 func (c *cgroupv2) CPUSetCPUs() ([]uint64, error) {
-	data, err := readFile(path.Join(cgroupRootDir, "cpuset.cpus.effective"))
+	data, err := c.readFile(path.Join(c.rootDir, "cpuset.cpus.effective"))
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +197,7 @@ func (c *cgroupv2) LogicalCores() (int, error) {
 // CPULimits get cpu limits.
 // If no limit is set, return ErrNoCFSLimit
 func (c *cgroupv2) CPULimits() (float64, error) {
-	data, err := readFile(path.Join(cgroupRootDir, "cpu.max"))
+	data, err := c.readFile(path.Join(c.rootDir, "cpu.max"))
 	if err != nil {
 		return 0, err
 	}
@@ -222,7 +227,10 @@ func newCGroup() (cgroup, error) {
 	// Detect if it's cgroup v2
 	_, err := os.Stat(path.Join(cgroupRootDir, "cgroup.controllers"))
 	if err == nil {
-		return &cgroupv2{}, nil
+		return &cgroupv2{
+			rootDir:  cgroupRootDir,
+			readFile: readFile,
+		}, nil
 	}
 
 	pid := os.Getpid()
@@ -264,5 +272,9 @@ func newCGroup() (cgroup, error) {
 			}
 		}
 	}
-	return &cgroupv1{cgroupSet: cgroupSet}, nil
+	return &cgroupv1{
+		cgroupSet: cgroupSet,
+		rootDir:   cgroupRootDir,
+		readFile:  readFile,
+	}, nil
 }
