@@ -36,7 +36,7 @@ func newCgroupCPU() (cpu *cgroupCPU, err error) {
 	}
 	quota := float64(len(sets))
 	limit, err := cpuLimits()
-	if err == nil && limit != -1 && quota > limit {
+	if err == nil && quota > limit {
 		quota = limit
 	}
 
@@ -143,32 +143,32 @@ func systemCPUUsage() (usage uint64, err error) {
 }
 
 func totalCPUUsage() (usage uint64, err error) {
-	var cg *cgroup
-	if cg, err = currentcGroup(); err != nil {
+	var cg cgroup
+	if cg, err = newCGroup(); err != nil {
 		return
 	}
-	return cg.CPUAcctUsage()
+	return cg.CPUAcctUsageNs()
 }
 
 func logicalCores() (cores int, err error) {
-	var cg *cgroup
-	if cg, err = currentcGroup(); err != nil {
+	var cg cgroup
+	if cg, err = newCGroup(); err != nil {
 		return
 	}
 	return cg.LogicalCores()
 }
 
 func cpuSets() (sets []uint64, err error) {
-	var cg *cgroup
-	if cg, err = currentcGroup(); err != nil {
+	var cg cgroup
+	if cg, err = newCGroup(); err != nil {
 		return
 	}
 	return cg.CPUSetCPUs()
 }
 
 func cpuLimits() (limits float64, err error) {
-	var cg *cgroup
-	if cg, err = currentcGroup(); err != nil {
+	var cg cgroup
+	if cg, err = newCGroup(); err != nil {
 		return
 	}
 	return cg.CPULimits()
