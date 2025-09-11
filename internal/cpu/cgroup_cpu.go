@@ -24,12 +24,10 @@ type cgroupCPU struct {
 func newCgroupCPU() (cpu *cgroupCPU, err error) {
 	cores, err := pscpu.Counts(true)
 	if err != nil || cores == 0 {
-		var cpus []uint64
-		cpus, err = perCPUUsage()
+		cores, err = logicalCores()
 		if err != nil {
 			return nil, err
 		}
-		cores = len(cpus)
 	}
 
 	sets, err := cpuSets()
@@ -37,17 +35,11 @@ func newCgroupCPU() (cpu *cgroupCPU, err error) {
 		return
 	}
 	quota := float64(len(sets))
-	cq, err := cpuQuota()
-	if err == nil && cq != -1 {
-		var period uint64
-		if period, err = cpuPeriod(); err != nil {
-			return
-		}
-		limit := float64(cq) / float64(period)
-		if limit < quota {
-			quota = limit
-		}
+	limit, err := cpuLimits()
+	if err == nil && limit != -1 && quota > limit {
+		quota = limit
 	}
+
 	maxFreq := cpuMaxFreq()
 
 	preSystem, err := systemCPUUsage()
@@ -125,7 +117,7 @@ func systemCPUUsage() (usage uint64, err error) {
 		f.Close()
 	}()
 	bufReader.Reset(f)
-	for err == nil {
+	for {
 		if line, err = bufReader.ReadString('\n'); err != nil {
 			return
 		}
@@ -148,8 +140,6 @@ func systemCPUUsage() (usage uint64, err error) {
 			return
 		}
 	}
-	err = errors.New("bad stats format")
-	return
 }
 
 func totalCPUUsage() (usage uint64, err error) {
@@ -160,12 +150,12 @@ func totalCPUUsage() (usage uint64, err error) {
 	return cg.CPUAcctUsage()
 }
 
-func perCPUUsage() (usage []uint64, err error) {
+func logicalCores() (cores int, err error) {
 	var cg *cgroup
 	if cg, err = currentcGroup(); err != nil {
 		return
 	}
-	return cg.CPUAcctUsagePerCPU()
+	return cg.LogicalCores()
 }
 
 func cpuSets() (sets []uint64, err error) {
@@ -176,20 +166,12 @@ func cpuSets() (sets []uint64, err error) {
 	return cg.CPUSetCPUs()
 }
 
-func cpuQuota() (quota int64, err error) {
+func cpuLimits() (limits float64, err error) {
 	var cg *cgroup
 	if cg, err = currentcGroup(); err != nil {
 		return
 	}
-	return cg.CPUCFSQuotaUs()
-}
-
-func cpuPeriod() (peroid uint64, err error) {
-	var cg *cgroup
-	if cg, err = currentcGroup(); err != nil {
-		return
-	}
-	return cg.CPUCFSPeriodUs()
+	return cg.CPULimits()
 }
 
 func cpuFreq() uint64 {
