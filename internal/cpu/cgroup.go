@@ -194,7 +194,7 @@ func (c *cgroup) CPULimits() (float64, error) {
 			return 0, err
 		}
 		if period == 0 {
-			return -1, nil
+			return 0, errors.New("cpu.max period is zero")
 		}
 		return float64(quota) / float64(period), nil
 	}
@@ -212,7 +212,7 @@ func (c *cgroup) CPULimits() (float64, error) {
 		return 0, err
 	}
 	if period == 0 {
-		return -1, nil
+		return 0, errors.New("cpu.cfs_period_us is zero")
 	}
 	return float64(quota) / float64(period), nil
 }
@@ -222,7 +222,7 @@ func currentcGroup() (*cgroup, error) {
 	// Detect if it's cgroup v2
 	_, err := os.Stat(path.Join(cgroupRootDir, "cgroup.controllers"))
 	if err == nil {
-		return &cgroup{isV2: true}, nil
+		return &cgroup{isV2: true, cgroupSet: make(map[string]string)}, nil
 	}
 
 	pid := os.Getpid()
