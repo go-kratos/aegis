@@ -121,7 +121,7 @@ func (c *cgroupv1) LogicalCores() (int, error) {
 	return len(usages), nil
 }
 
-// CPULimits return get cpu limits
+// CPULimits returns CPU limits
 // If no limit is set, return ErrNoCFSLimit
 func (c *cgroupv1) CPULimits() (float64, error) {
 	quota, err := c.CPUCFSQuotaUs()
