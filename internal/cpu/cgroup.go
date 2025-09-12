@@ -112,7 +112,7 @@ func (c *cgroupv1) CPUSetCPUs() ([]uint64, error) {
 	return sets, nil
 }
 
-// LogicalCores return get logical cores
+// LogicalCores returns the number of logical cores.
 func (c *cgroupv1) LogicalCores() (int, error) {
 	usages, err := c.CPUAcctUsagePerCPU()
 	if err != nil {
